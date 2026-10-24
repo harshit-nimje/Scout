@@ -73,7 +73,13 @@ jobs:
           cp twa-manifest.json twa/twa-manifest.json
           cd twa
 
-          bubblewrap updateConfig --jdkPath="$JAVA_HOME" --androidSdkPath="$ANDROID_HOME"
+          mkdir -p "$HOME/.bubblewrap"
+          cat > "$HOME/.bubblewrap/config.json" <<EOF
+          {
+            "jdkPath": "$JAVA_HOME",
+            "androidSdkPath": "$ANDROID_HOME"
+          }
+          EOF
 
           if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ]; then
             test -n "${ANDROID_KEYSTORE_PASSWORD:-}" || { echo "ANDROID_KEYSTORE_PASSWORD secret is required with ANDROID_KEYSTORE_BASE64"; exit 1; }
