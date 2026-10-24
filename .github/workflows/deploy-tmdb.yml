@@ -1,0 +1,51 @@
+name: Deploy TMDB proxy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/tmdb/**"
+      - ".github/workflows/deploy-tmdb.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-tmdb
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      TMDB_KEY: ${{ secrets.TMDB_KEY }}
+      ALLOW_ORIGIN: https://scout.edgeone.dev
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo "Missing repository secret SUPABASE_ACCESS_TOKEN"; exit 1; }
+          test -n "$SUPABASE_PROJECT_REF" || { echo "Missing repository secret SUPABASE_PROJECT_REF"; exit 1; }
+          test -n "$TMDB_KEY" || { echo "Missing repository secret TMDB_KEY"; exit 1; }
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Set server-side function secrets
+        shell: bash
+        run: |
+          supabase secrets set \
+            --project-ref "$SUPABASE_PROJECT_REF" \
+            "TMDB_KEY=$TMDB_KEY" \
+            "ALLOW_ORIGIN=$ALLOW_ORIGIN"
+
+      - name: Deploy public discovery proxy
+        run: supabase functions deploy tmdb --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
