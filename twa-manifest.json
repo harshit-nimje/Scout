@@ -1,0 +1,37 @@
+{
+  "packageId": "app.cine",
+  "host": "scout.edgeone.dev",
+  "name": "Scout",
+  "launcherName": "Scout",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#0e0d0b",
+  "themeColorDark": "#0e0d0b",
+  "navigationColor": "#0e0d0b",
+  "navigationColorDark": "#0e0d0b",
+  "navigationDividerColor": "#0e0d0b",
+  "navigationDividerColorDark": "#0e0d0b",
+  "backgroundColor": "#0e0d0b",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://scout.edgeone.dev/icons/cine.svg",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "scout"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://scout.edgeone.dev/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://scout.edgeone.dev/",
+  "minSdkVersion": 23
+}
