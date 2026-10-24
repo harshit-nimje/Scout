@@ -17,7 +17,10 @@ permissions:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - name: Check out patched Scout build
         uses: actions/checkout@v4
@@ -26,6 +29,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -33,11 +38,32 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # Do not use android-actions/setup-android here: its default "tools"
+      # package is obsolete and makes sdkmanager exit before the build starts.
+      - name: Locate Android SDK tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "$ANDROID_HOME"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager was not found under $ANDROID_HOME/cmdline-tools"
+            exit 1
+          fi
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          "$SDKMANAGER" --version
 
-      - name: Install required Android SDK packages
-        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - name: Accept Android SDK licenses
+        shell: bash
+        run: yes | "$SDKMANAGER" --licenses >/dev/null || true
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Install Capacitor
         run: |
@@ -45,7 +71,13 @@ jobs:
           npm install --save-exact @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
 
       - name: Prepare the single-file web app
+        shell: bash
         run: |
+          set -euo pipefail
+          test -s index.html
+          test -s manifest.webmanifest
+          test -s sw.js
+          test -s icons/cine.svg
           mkdir -p www/icons
           cp index.html www/index.html
           cp sw.js www/sw.js
@@ -73,7 +105,10 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew --no-daemon assembleDebug
+          ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Verify APK exists
+        run: test -s android/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
