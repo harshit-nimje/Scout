@@ -2152,6 +2152,9 @@ function syncBg() {}   // backdrop is a flat var(--bg) now; nothing to swap on s
    ========================================================================== */
 let moreN = 0;   // consecutive page fetches that failed to refill the deck
 function ensureDeck() {
+  // Don't fill the first deck with bundled demo titles while the live catalogue is loading.
+  // more() will call ensureDeck again after the TMDB proxy responds.
+  if (TMC && st === 'loading') return;
   if (DECK.length < 3) {   // one scoring pass for the whole fill, not one per card
     const have = new Set(DECK.map(d => d.id));
     recommend(3 + DECK.length).forEach(t => { if (DECK.length < 3 && !have.has(t.id)) { have.add(t.id); DECK.push(t); } });
