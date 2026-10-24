@@ -12,4 +12,4 @@ This repository contains the existing single-file `cine` movie and TV discovery 
 
 Do not commit TMDB API keys, Supabase service-role keys, Google OAuth client secrets, signing keystores, or signing passwords. Use GitHub Actions repository secrets and Supabase Function secrets as described in `DEPLOYMENT.md`.
 
-The TMDB proxy URL cannot be finalized until the Supabase project reference is known. The HTML therefore keeps the proxy switch disabled until you set it in `index.html` and redeploy to EdgeOne.
+The HTML is currently wired to `https://qsddtnorjfudbmafzjdr.supabase.co/functions/v1/tmdb`, inferred from the Supabase CLI error shown during setup. Verify that project reference in your Supabase dashboard before relying on the proxy.
