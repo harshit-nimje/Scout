@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "cine",
+  "short_name": "cine",
+  "description": "Swipe films and series and cine learns your taste — a daily pick, a mood watchlist, a saved watchlist and a TMDB link.",
+  "lang": "en",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "portrait",
+  "background_color": "#0e0d0b",
+  "theme_color": "#0e0d0b",
+  "icons": [
+    {
+      "src": "/icons/cine.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
