@@ -1,0 +1,61 @@
+name: Install offline semantic model
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [rebuild/cine-twa-clean]
+    paths:
+      - '.github/workflows/install-semantic-model.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: install-semantic-model-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  install-model:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout with Git LFS
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: true
+      - name: Download official Xenova all-MiniLM-L6-v2 assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main"
+          mkdir -p models/all-MiniLM-L6-v2/onnx
+          for file in config.json tokenizer.json tokenizer_config.json special_tokens_map.json; do
+            curl --fail --location --retry 3 --retry-delay 2 "$base/$file" -o "models/all-MiniLM-L6-v2/$file"
+          done
+          curl --fail --location --retry 3 --retry-delay 2 "$base/onnx/model_quantized.onnx" -o models/all-MiniLM-L6-v2/onnx/model_quantized.onnx
+          test -s models/all-MiniLM-L6-v2/onnx/model_quantized.onnx
+          # Refuse HTML/error pages or unexpectedly tiny model payloads.
+          test "$(stat -c%s models/all-MiniLM-L6-v2/onnx/model_quantized.onnx)" -gt 10000000
+          rm -f models/all-MiniLM-L6-v2/config.json.placeholder models/all-MiniLM-L6-v2/tokenizer.json.placeholder
+          rm -f models/all-MiniLM-L6-v2/onnx/README.md
+          cat > models/all-MiniLM-L6-v2/README.md <<'EOF'
+          # all-MiniLM-L6-v2 — offline semantic model
+          
+          These files are the public Xenova/all-MiniLM-L6-v2 model assets used by Transformers.js 2.17.1.
+          The quantized ONNX weights are tracked with Git LFS. The app loads this local model first and
+          keeps the remote Hugging Face model as a fallback when online.
+          EOF
+      - name: Commit model assets to this branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs install
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f models/all-MiniLM-L6-v2
+          if git diff --cached --quiet; then
+            echo "Model assets already installed."
+            exit 0
+          fi
+          git commit -m "Add quantized MiniLM model for offline semantic search"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
