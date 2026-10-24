@@ -8,6 +8,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="color-scheme" content="dark">
 <meta name="application-name" content="cine">
+<link rel="manifest" href="/manifest.webmanifest">
 <meta name="description" content="Swipe films and series and cine learns your taste — a daily pick, a mood watchlist, a saved watchlist and a TMDB link.">
 <meta property="og:title" content="cine — swipe to find your next watch">
 <meta property="og:description" content="Swipe films and shows and cine learns your taste.">
@@ -3225,5 +3226,10 @@ window.cloudTouch = cloudTouch;   // saveNow() (engine scope) calls this when st
 
 
 
+<script>
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}
+</script>
 </body>
 </html>
