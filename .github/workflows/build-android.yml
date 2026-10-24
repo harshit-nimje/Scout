@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Scout TWA APK
 
 on:
   workflow_dispatch:
@@ -9,109 +9,87 @@ on:
       - "manifest.webmanifest"
       - "sw.js"
       - "icons/**"
+      - "twa-manifest.json"
       - ".github/workflows/build-android.yml"
 
 permissions:
   contents: read
 
 jobs:
-  build-apk:
+  build-twa:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
-      - name: Check out patched Scout build
+      - name: Check out Scout
         uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
 
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "17"
 
-      # Do not use android-actions/setup-android here: its default "tools"
-      # package is obsolete and makes sdkmanager exit before the build starts.
-      - name: Locate Android SDK tools
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -d "$ANDROID_HOME"
-          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
-          if [ -z "$SDKMANAGER" ]; then
-            echo "sdkmanager was not found under $ANDROID_HOME/cmdline-tools"
-            exit 1
-          fi
-          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
-          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
-          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
-          "$SDKMANAGER" --version
-
-      - name: Accept Android SDK licenses
-        shell: bash
-        run: yes | "$SDKMANAGER" --licenses >/dev/null || true
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Install Android SDK packages
         shell: bash
         run: |
           set -euo pipefail
-          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          sdkmanager --licenses </dev/null || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Install Capacitor
-        run: |
-          npm init -y
-          npm install --save-exact @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
+      - name: Install Bubblewrap CLI
+        run: npm install --global @bubblewrap/cli
 
-      - name: Prepare the single-file web app
+      - name: Prepare TWA project and signing key
         shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          test -s index.html
-          test -s manifest.webmanifest
-          test -s sw.js
-          test -s icons/cine.svg
-          mkdir -p www/icons
-          cp index.html www/index.html
-          cp sw.js www/sw.js
-          cp manifest.webmanifest www/manifest.webmanifest
-          cp icons/cine.svg www/icons/cine.svg
-          cat > capacitor.config.json <<'EOF'
-          {
-            "appId": "com.harshitnimje.scout",
-            "appName": "Scout",
-            "webDir": "www",
-            "bundledWebRuntime": false,
-            "server": {
-              "androidScheme": "https"
-            }
-          }
-          EOF
+          mkdir -p twa
+          cp twa-manifest.json twa/twa-manifest.json
+          cd twa
 
-      - name: Generate Android project
-        run: npx cap add android
+          bubblewrap updateConfig --jdkPath="$JAVA_HOME" --androidSdkPath="$ANDROID_HOME"
 
-      - name: Sync web assets into Android
-        run: npx cap sync android
+          if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ]; then
+            test -n "${ANDROID_KEYSTORE_PASSWORD:-}" || { echo "ANDROID_KEYSTORE_PASSWORD secret is required with ANDROID_KEYSTORE_BASE64"; exit 1; }
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android.keystore
+            KS_PASS="$ANDROID_KEYSTORE_PASSWORD"
+            KEY_PASS="${ANDROID_KEY_PASSWORD:-$ANDROID_KEYSTORE_PASSWORD}"
+          else
+            echo "::warning::No persistent Android signing keystore configured. This run will create a temporary signing key; the APK is for initial testing only and future builds will not update-install over it."
+            KS_PASS="ScoutTemp-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            KEY_PASS="$KS_PASS"
+            keytool -genkeypair -v               -keystore android.keystore               -storepass "$KS_PASS"               -keypass "$KEY_PASS"               -alias scout               -keyalg RSA -keysize 2048 -validity 10000               -dname "CN=Scout, OU=Android, O=Scout, L=Mumbai, ST=Maharashtra, C=IN"
+          fi
 
-      - name: Build debug APK
+          echo "BUBBLEWRAP_KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
+          echo "BUBBLEWRAP_KEY_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
+
+          bubblewrap update --skipVersionUpgrade --manifest=./twa-manifest.json
+
+      - name: Build TWA APK
+        working-directory: twa
+        run: bubblewrap build --skipPwaValidation --manifest=./twa-manifest.json
+
+      - name: Verify TWA APK
         run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew --no-daemon --stacktrace assembleDebug
+          set -euo pipefail
+          test -s twa/app-release-signed.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging twa/app-release-signed.apk | grep -F "package: name='app.cine'"
 
-      - name: Verify APK exists
-        run: test -s android/app/build/outputs/apk/debug/app-debug.apk
-
-      - name: Upload APK
+      - name: Upload TWA APK
         uses: actions/upload-artifact@v4
         with:
-          name: scout-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: scout-twa-apk
+          path: twa/app-release-signed.apk
           if-no-files-found: error
           retention-days: 14
