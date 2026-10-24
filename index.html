@@ -1959,7 +1959,7 @@ function mzPasses(t, plan) {
 function mzScoreAll(list, plan, promptEmbedding) {
   const want=(plan.req&&plan.req.length)?plan.req:null;
   const explicit=!!((plan.req&&plan.req.length)||(plan.kws&&plan.kws.length));
-  const semanticWeight=!promptEmbedding?0:(explicit?.15:.35);
+  const semanticWeight=!promptEmbedding?0:(explicit ? 0.15 : 0.35);
   const seen=new Set(),out=[];
   list.forEach(t=>{if(!t||seen.has(t.id)||!mzPasses(t,plan))return;seen.add(t.id);
     out.push({t,s:moodScore(t,plan.vec,want,promptEmbedding,semanticWeight)*(avoided(t,plan)?.6:1)});
