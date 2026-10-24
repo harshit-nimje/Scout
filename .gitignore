@@ -1,0 +1,16 @@
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.p12
+*.pem
+service-account*.json
+
+# Android/Bubblewrap generated output
+node_modules/
+.gradle/
+build/
+android/.gradle/
+android/app/build/
