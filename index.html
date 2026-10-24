@@ -1404,7 +1404,101 @@ function loadState() {
   } catch (e) { return freshState(); }
 }
 
+/* ---------------- AI Micromodel (Semantic Mood Engine) ---------------- */
+let aiWorker = null;
+let aiReady = false;
+let aiInitFailed = false;
+const aiPending = new Map();
+let aiReadyResolve;
+const aiReadyPromise = new Promise(resolve => { aiReadyResolve = resolve; });
+
+function initAI() {
+  if (aiWorker) return;
+  try {
+    aiWorker = new Worker('./mood-worker.js', { type: 'module' });
+    aiWorker.onmessage = event => {
+      const { type, data, id } = event.data || {};
+      if (type === 'ready') { aiReady = true; aiInitFailed = false; aiReadyResolve(true); }
+      if (type === 'error' && id === 'init') { aiInitFailed = true; aiReadyResolve(false); }
+      const pending = aiPending.get(id);
+      if (pending) {
+        clearTimeout(pending.timer);
+        aiPending.delete(id);
+        if (type === 'embedding') pending.resolve(Array.isArray(data) ? data : null);
+        else if (type === 'error') pending.resolve(null);
+      }
+    };
+    aiWorker.onerror = () => {
+      aiInitFailed = true;
+      aiReadyResolve(false);
+      aiPending.forEach(p => { clearTimeout(p.timer); p.resolve(null); });
+      aiPending.clear();
+    };
+    aiWorker.postMessage({ type: 'init', id: 'init' });
+  } catch (e) {
+    aiInitFailed = true;
+    aiReadyResolve(false);
+  }
+}
+
+function aiCall(type, data) {
+  return new Promise(resolve => {
+    if (!aiWorker || aiInitFailed) return resolve(null);
+    const id = 'ai-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+    const timer = setTimeout(() => {
+      aiPending.delete(id);
+      resolve(null); // 2-second budget: semantic boost is optional
+    }, 2000);
+    aiPending.set(id, { resolve, timer });
+    try { aiWorker.postMessage({ type, data, id }); }
+    catch (e) { clearTimeout(timer); aiPending.delete(id); resolve(null); }
+  });
+}
+
+function cosineSimilarity(a, b) {
+  if (!a || !b || a.length !== b.length || !a.length) return 0;
+  let dot = 0, aa = 0, bb = 0;
+  for (let i = 0; i < a.length; i++) { dot += a[i] * b[i]; aa += a[i] * a[i]; bb += b[i] * b[i]; }
+  return aa && bb ? dot / (Math.sqrt(aa) * Math.sqrt(bb)) : 0;
+}
+
+async function embedTitle(t) {
+  if (!t || !t.id) return null;
+  if (t._emb) return t._emb;
+  const key = 'cine.emb:' + t.id;
+  try {
+    const saved = LS.get(key);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length) { t._emb = parsed; return parsed; }
+    }
+  } catch (e) {}
+  const text = [t.title || '', (t.genres || []).join(' '), t.year || ''].filter(Boolean).join(' ');
+  const emb = await aiCall('embed', text);
+  if (emb && emb.length) {
+    t._emb = emb;
+    try { LS.set(key, JSON.stringify(emb)); } catch (e) {}
+    return emb;
+  }
+  return null;
+}
+let aiWarmScheduled = false;
+function scheduleMoodEmbeddingWarmup() {
+  if (aiWarmScheduled || POOL.size < 20) return;
+  aiWarmScheduled = true;
+  (async () => {
+    const ready = await Promise.race([aiReadyPromise, new Promise(resolve => setTimeout(() => resolve(false), 120000))]);
+    if (!ready) return;
+    const batch = [...POOL.values()].slice(0, 100);
+    for (let i = 0; i < batch.length; i++) {
+      if (!batch[i]._emb) await embedTitle(batch[i]);
+      if (i % 4 === 3) await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  })().catch(() => {});
+}
+
 let S = loadState();
+initAI();
 let shownSet = new Set(S.shown);   // O(1) membership; S.shown stays an array so it still serialises
 let _sc = null;                    // per-pass score context (genre/by/kw maxima), rebuilt once per recommend()
 let Q = { l: [0, 0], p: [0, 0] };   // quality lean: likes/passes weighted by watchability (was the v5 applyFeedback wrapper)
@@ -1437,7 +1531,7 @@ addEventListener('pagehide', () => { if (_saveDirty) saveNow(); });   // never l
 
 /* ---------------- pool ---------------- */
 const POOL = new Map();
-function reg(t) { if (t && t.id && !POOL.has(t.id)) { t.f = t.f || inferFeatures(t); POOL.set(t.id, t); } return t; }
+function reg(t) { if (t && t.id && !POOL.has(t.id)) { t.f = t.f || inferFeatures(t); POOL.set(t.id, t); if (POOL.size >= 20) scheduleMoodEmbeddingWarmup(); } return t; }
 function findTrack(id) { return POOL.get(id) || CAT.find(t => t.id === id) || null; }
 
 /* ---------------- feature inference ---------------- */
@@ -1785,16 +1879,24 @@ function moodQuote(v, genres) {
   const g = genres.slice(0, 2).join(' or ');
   return 'So: ' + pA + ', ' + wA + ', ' + dA + (g ? ' \u2014 leaning ' + g + '.' : '.');
 }
-function moodScore(t, vec, genres) {
+function moodScore(t, vec, genres, promptEmbedding) {
   const f = featOf(t);
   const d = Math.abs(f.pace - vec[0]) + Math.abs(f.warmth - vec[1]) + Math.abs(f.depth - vec[2]) + Math.abs(f.scale - vec[3]);
   const moodFit = clamp(1 - d / 4 * 1.3);
   const taste = scoreTrack(t);
-  if (!genres || !genres.length) return .55 * moodFit + .45 * taste;
-  /* a named genre outweighs vibe and popularity: "romantic" must mean romance, not "sort of warm" */
-  const hits = (t.genres || []).filter(g => genres.includes(g)).length;
-  const genreFit = hits ? clamp(.62 + .38 * (hits / genres.length)) : 0;
-  return .34 * moodFit + .48 * genreFit + .18 * taste;
+  let baseScore;
+  if (!genres || !genres.length) baseScore = .55 * moodFit + .45 * taste;
+  else {
+    /* a named genre outweighs vibe and popularity: "romantic" must mean romance, not "sort of warm" */
+    const hits = (t.genres || []).filter(g => genres.includes(g)).length;
+    const genreFit = hits ? clamp(.62 + .38 * (hits / genres.length)) : 0;
+    baseScore = .34 * moodFit + .48 * genreFit + .18 * taste;
+  }
+  if (promptEmbedding && t._emb) {
+    const semScore = clamp((cosineSimilarity(promptEmbedding, t._emb) + 1) / 2);
+    return baseScore * .6 + semScore * .4;
+  }
+  return baseScore;
 }
 const avoided = (t, plan) => !!(plan.avoid && plan.avoid.length && (t.genres || []).some(g => plan.avoid.includes(g)));
 function buildMood(plan, n) {
@@ -1809,7 +1911,7 @@ function buildMood(plan, n) {
     return true;
   });
   const want = (plan.req && plan.req.length) ? plan.req : null;
-  const scored = pool.map(t => ({ t, s: moodScore(t, plan.vec, want) * (avoided(t, plan) ? .6 : 1) })).sort((a, b) => b.s - a.s);
+  const scored = pool.map(t => ({ t, s: moodScore(t, plan.vec, want, promptEmbedding) * (avoided(t, plan) ? .6 : 1) })).sort((a, b) => b.s - a.s);
   /* if the ask named a genre, return those and only those — unless that leaves almost nothing,
      in which case the nearest misses follow on rather than an empty grid */
   if (want) {
@@ -1831,7 +1933,7 @@ function mzPasses(t, plan) {
   if (plan.avoid && plan.avoid.length && (t.genres || []).some(g => plan.avoid.includes(g))) return false;
   return true;
 }
-function mzScoreAll(list, plan) {
+function mzScoreAll(list, plan, promptEmbedding) {
   const want = (plan.req && plan.req.length) ? plan.req : null;
   const seen = new Set(), out = [];
   list.forEach(t => {
@@ -2636,6 +2738,7 @@ async function runMood() {
   const th = $('#mzTh'); th.textContent = ['Reading the room\u2026', 'Building the list\u2026', 'Tuning the mood\u2026'][Math.floor(Math.random() * 3)];
   await new Promise(r => setTimeout(r, reduced ? 60 : 900));
   mzPlan = mzRead(text, [S.feat.pace, S.feat.warmth, S.feat.depth, S.feat.scale]);
+  mzPlan._promptText = text;
   renderMood();
   mzSetState('built'); mzRunning = false;
   $('#v-moods').scrollTop = 0;
@@ -2673,10 +2776,12 @@ async function mzCatalog(plan, drop) {
 }
 /* local pool first (instant, works offline), then the catalogue. If the strict
    read comes back thin, loosen it a step at a time rather than showing nothing. */
-async function moodFind(plan, n) {
+async function moodFind(plan, n, promptText) {
   const lim = n || 12;
   const local = [...POOL.values()];
-  let scored = mzScoreAll(local, plan), from = 'local';
+  let promptEmbedding = null;
+  if (promptText) promptEmbedding = await aiCall('embed', promptText);
+  let scored = mzScoreAll(local, plan, promptEmbedding), from = 'local';
   if (TMC && TMC.discover && plan.constrained) {
     if (plan.kws && plan.kws.length) plan._kwids = await mzKeywordIds(plan.kws);
     const relax = [];
@@ -2685,7 +2790,7 @@ async function moodFind(plan, n) {
     for (let round = 0; round <= relax.length; round++) {
       const drop = round === 0 ? [] : relax[round - 1];
       const cat = await mzCatalog(plan, drop);
-      if (cat.length) { scored = mzScoreAll(local.concat(cat), plan); from = 'catalogue'; }
+      if (cat.length) { scored = mzScoreAll(local.concat(cat), plan, promptEmbedding); from = 'catalogue'; }
       const enough = scored.filter(x => !(plan.req && plan.req.length) || (x.t.genres || []).some(g => plan.req.includes(g))).length;
       if (enough >= Math.min(8, lim) || !cat.length) break;
     }
@@ -2725,7 +2830,7 @@ async function renderMood() {
   $('#mzGrid').innerHTML = '<div class="mz-wait">Reading the catalogue\u2026</div>';
   const token = ++mzToken;
   let out;
-  try { out = await moodFind(p, 12); } catch (e) { out = { list: [], from: 'local' }; }
+  try { out = await moodFind(p, 12, p._promptText); } catch (e) { out = { list: [], from: 'local' }; }
   if (token !== mzToken) return;              /* a newer search has taken over */
   const res = out.list;
   mzResults = res.map(x => x.t);
