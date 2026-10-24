@@ -118,7 +118,7 @@ jobs:
           done
           node - <<'NODE'
           const fs = require('node:fs');
-          const live = JSON.parse(fs.readFileSync('/tmp/__manifest_webmanifest', 'utf8'));
+          const live = JSON.parse(fs.readFileSync('/tmp/_manifest_webmanifest', 'utf8'));
           const repo = JSON.parse(fs.readFileSync('manifest.webmanifest', 'utf8'));
           if (live.name !== repo.name || live.start_url !== repo.start_url) throw new Error('Live PWA manifest does not match checked-out source');
           NODE
