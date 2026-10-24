@@ -18,7 +18,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8E%9E%EF%B8%8F%3C/text%3E%3C/svg%3E">
 <noscript><p style="font:16px/1.5 system-ui;color:#efe6d2;background:#0e0d0b;padding:24px">cine needs JavaScript to run.</p></noscript>
 <style>*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%}
+html,body{height:100%;overscroll-behavior:none;overscroll-behavior-y:none}
 body{color:var(--ink);overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 input,textarea{-webkit-user-select:text;user-select:text}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-action:manipulation}
@@ -67,7 +67,7 @@ body:not([data-view="discover"]) #dpill{display:none}
 
 /* ---------- views ---------- */
 main{position:fixed;inset:0;z-index:2}
-.view{position:absolute;inset:0;display:none;overflow-y:auto;overflow-x:hidden;padding:84px 22px 40px;overscroll-behavior:contain;scrollbar-width:none}
+.view{position:absolute;inset:0;display:none;overflow-y:auto;overflow-x:hidden;padding:84px 22px 40px;overscroll-behavior:none;scrollbar-width:none}
 .view.on{display:block}
 #v-discover.on{grid-template-columns:minmax(0,1fr);justify-items:center;align-content:center;overflow:hidden;padding-bottom:20px}
 .wrap{max-width:760px;margin:0 auto;width:100%;min-width:0}
@@ -216,7 +216,7 @@ summary{cursor:pointer;color:var(--ink);font-weight:600;font-size:14px}
 #sheet.open{display:block}
 #sheet .sb{position:absolute;inset:0;background:rgba(8,5,14,.6);backdrop-filter:blur(8px);opacity:0;transition:opacity .45s var(--ease)}
 #sheet.show .sb{opacity:1}
-#sheet .sp{position:absolute;left:50%;bottom:0;width:min(580px,100%);max-height:min(90dvh,860px);translate:-50% 0;border:1px solid var(--line);border-bottom:0;padding:0 22px calc(28px + env(safe-area-inset-bottom));overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;transform:translateY(106%);transition:transform .6s var(--ease)}
+#sheet .sp{position:absolute;left:50%;bottom:0;width:min(580px,100%);max-height:min(90dvh,860px);translate:-50% 0;border:1px solid var(--line);border-bottom:0;padding:0 22px calc(28px + env(safe-area-inset-bottom));overflow-x:hidden;overflow-y:auto;overscroll-behavior:none;transform:translateY(106%);transition:transform .6s var(--ease)}
 #sheet.show .sp{transform:none}#sheet .sp.drag{transition:none}
 .grabw{position:sticky;top:0;z-index:2;padding:10px 0 14px;touch-action:none;cursor:grab;}
 .grab{display:block;width:42px;height:4px;border-radius:4px;background:rgba(255,255,255,.26);margin:0 auto}
@@ -501,7 +501,7 @@ body[data-view="discover"] #toast{bottom:calc(152px + env(safe-area-inset-bottom
 #v-moods[data-s="think"] .mz-think{opacity:1}
 .mz-think span{color:transparent;animation:mzSh 2.4s linear infinite}
 @keyframes mzSh{to{background-position:-250% 0}}
-.mz-scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:76px 16px calc(var(--bb) + var(--bh) + 110px);opacity:0;pointer-events:none;transition:opacity .6s;overscroll-behavior:contain;-webkit-mask-image:linear-gradient(180deg,transparent 56px,#000 100px);mask-image:linear-gradient(180deg,transparent 56px,#000 100px)}
+.mz-scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:76px 16px calc(var(--bb) + var(--bh) + 110px);opacity:0;pointer-events:none;transition:opacity .6s;overscroll-behavior:none;-webkit-mask-image:linear-gradient(180deg,transparent 56px,#000 100px);mask-image:linear-gradient(180deg,transparent 56px,#000 100px)}
 #v-moods[data-s="built"] .mz-scroll{opacity:1;pointer-events:auto}
 .mz-in{max-width:1000px;margin:0 auto}
 .mz-eye{font-size:13px;color:var(--dim);display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -867,7 +867,7 @@ nav button.on span{max-width:84px;opacity:1}
 #deck .ov.nope::before,#deck .ov.nope::after,#deck .ov.nope svg{margin-right:6px}
 
 /* flipped: details scroll, no drag */
-.card.flipped .bk{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:none;padding-bottom:0}
+.card.flipped .bk{overflow-y:auto;overscroll-behavior:none;-webkit-overflow-scrolling:touch;touch-action:none;padding-bottom:0}
 .card.flipped .bk .syn{flex:none;overflow:visible;-webkit-mask-image:none;mask-image:none}
 .card.flipped .bkf{position:sticky;bottom:0;padding:18px 0 22px;margin-top:auto;background:linear-gradient(transparent,#12100d 34%)}
 .bkh{position:relative;padding-right:66px}
@@ -966,12 +966,12 @@ nav button.on span{max-width:84px;opacity:1}
 #sheet .sc p,#sheet .shp,.bk .syn p,.sub,.read{-webkit-user-select:text;user-select:text}
 #sheet .sp:focus{outline:none}
 
-.card .face.back .bk{position:absolute;inset:0;height:auto;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;padding:26px 22px 0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:none;scrollbar-width:none;max-height:100%}
+.card .face.back .bk{position:absolute;inset:0;height:auto;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;padding:26px 22px 0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:none;-webkit-overflow-scrolling:touch;touch-action:none;scrollbar-width:none;max-height:100%}
 .card .face.back .bk::-webkit-scrollbar{display:none}
 .card:not(.flipped) .face.back{pointer-events:none}
 .card.flipped .face.front{pointer-events:none}
 .card.flipped .face.back{pointer-events:auto;overflow:hidden}
-.card.flipped .face.back .bk{overscroll-behavior:contain}
+.card.flipped .face.back .bk{overscroll-behavior:none}
 .card .face.back .bk>*{flex:none}
 .card .face.back .bk .syn{flex:none;overflow:visible;-webkit-mask-image:none;mask-image:none}
 .card .face.back .bk .syn p{overflow-wrap:anywhere}
