@@ -141,6 +141,9 @@ jobs:
         run: bubblewrap update --skipVersionUpgrade --manifest=./twa-manifest.json
 
       - name: Build signed APK and AAB
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           bubblewrap build --manifest=./twa-manifest.json --signingKeyPath=./android.keystore --signingKeyAlias="$KEY_ALIAS"
