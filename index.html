@@ -1939,7 +1939,7 @@ function mzScoreAll(list, plan, promptEmbedding) {
   list.forEach(t => {
     if (!t || seen.has(t.id) || !mzPasses(t, plan)) return;
     seen.add(t.id);
-    out.push({ t, s: moodScore(t, plan.vec, want) * (avoided(t, plan) ? .6 : 1) });
+    out.push({ t, s: moodScore(t, plan.vec, want, promptEmbedding) * (avoided(t, plan) ? .6 : 1) });
   });
   return out.sort((a, b) => b.s - a.s);
 }
