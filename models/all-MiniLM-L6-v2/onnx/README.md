@@ -1,0 +1,1 @@
+The binary ONNX model cannot be uploaded through the text-only GitHub connector. Add the real quantized ONNX weights here using Git LFS. Do not rename a placeholder to .onnx.
