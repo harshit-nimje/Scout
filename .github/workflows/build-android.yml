@@ -81,14 +81,16 @@ jobs:
           }
           EOF
 
-          # Bubblewrap expects a "build" directory in its SDK root, but the
-          # hosted runner exposes this as "build-tools". Add a compatibility alias.
+          # Bubblewrap validates the SDK root by requiring either tools/ or bin/.
+          # Modern Android SDK installs only cmdline-tools/latest/bin/sdkmanager, so
+          # expose that standard location without changing the SDK root used for builds.
           test -x "$ANDROID_HOME/platform-tools/adb"
           test -d "$ANDROID_HOME/build-tools/35.0.0"
           test -d "$ANDROID_HOME/platforms/android-35"
-          if [ ! -e "$ANDROID_HOME/build" ]; then
-            ln -s "$ANDROID_HOME/build-tools" "$ANDROID_HOME/build"
+          if [ ! -e "$ANDROID_HOME/tools" ]; then
+            ln -s "$ANDROID_HOME/cmdline-tools/latest" "$ANDROID_HOME/tools"
           fi
+          test -x "$ANDROID_HOME/tools/bin/sdkmanager"
           bubblewrap updateConfig --jdkPath="$JAVA_HOME" --androidSdkPath="$ANDROID_HOME"
           bubblewrap doctor
 
