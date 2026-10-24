@@ -1,4 +1,4 @@
-name: Build Scout TWA APK
+name: Build Cine Android (TWA)
 
 on:
   workflow_dispatch:
@@ -10,21 +10,32 @@ on:
       - "sw.js"
       - "icons/**"
       - "twa-manifest.json"
+      - ".well-known/assetlinks.json"
       - ".github/workflows/build-android.yml"
 
 permissions:
   contents: read
 
+concurrency:
+  group: cine-android-build
+  cancel-in-progress: true
+
 jobs:
-  build-twa:
+  build:
+    name: Validate and package Cine
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
-      - name: Check out Scout
+      - name: Check out Cine
         uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -32,99 +43,119 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # Avoid android-actions/setup-android: its default "tools" package is obsolete.
-      - name: Locate Android SDK tools
+      - name: Validate Cine web shell
+        run: |
+          set -euo pipefail
+          test -s index.html
+          test -s manifest.webmanifest
+          test -s sw.js
+          test -s twa-manifest.json
+          test -s icons/cine.svg
+          node --check sw.js
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const m = JSON.parse(fs.readFileSync('manifest.webmanifest', 'utf8'));
+          const t = JSON.parse(fs.readFileSync('twa-manifest.json', 'utf8'));
+          if (m.name !== 'Cine' || m.display !== 'standalone' || !m.start_url) throw new Error('Invalid Cine PWA manifest');
+          if (m.icons?.length !== 1 || !m.icons.some(i => i.src === '/icons/cine.svg')) throw new Error('Cine SVG icon missing from web manifest');
+          if (t.packageId !== 'app.cine' || t.host !== 'scout.edgeone.dev' || t.name !== 'Cine') throw new Error('TWA identity mismatch');
+          if (t.startUrl !== m.start_url || t.webManifestUrl !== 'https://scout.edgeone.dev/manifest.webmanifest') throw new Error('TWA/PWA start URL mismatch');
+          if (!Number.isInteger(t.appVersionCode) || !t.appVersion) throw new Error('Missing Android version');
+          console.log('Cine web shell and TWA identity checks passed.');
+          NODE
+
+      - name: Configure Android SDK for Bubblewrap
         shell: bash
         run: |
           set -euo pipefail
           test -d "$ANDROID_HOME"
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
-          if [ -z "$SDKMANAGER" ]; then
-            echo "sdkmanager was not found under $ANDROID_HOME/cmdline-tools"
-            exit 1
-          fi
+          test -n "$SDKMANAGER" || { echo "::error::Android sdkmanager missing"; exit 1; }
           echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
           echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
           echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
-          "$SDKMANAGER" --version
-
-      - name: Accept Android SDK licenses
-        shell: bash
-        run: yes | "$SDKMANAGER" --licenses >/dev/null || true
-
-      - name: Install Android SDK packages
-        shell: bash
-        run: |
-          set -euo pipefail
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Install Bubblewrap CLI
-        run: npm install --global @bubblewrap/cli
-
-      - name: Prepare TWA project and signing key
-        shell: bash
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          set -euo pipefail
-          mkdir -p twa
-          cp twa-manifest.json twa/twa-manifest.json
-          cd twa
-
-          mkdir -p "$HOME/.bubblewrap"
-          cat > "$HOME/.bubblewrap/config.json" <<EOF
-          {
-            "jdkPath": "$JAVA_HOME",
-            "androidSdkPath": "$ANDROID_HOME"
-          }
-          EOF
-
-          # Bubblewrap validates the SDK root by requiring either tools/ or bin/.
-          # Modern Android SDK installs only cmdline-tools/latest/bin/sdkmanager, so
-          # expose that standard location without changing the SDK root used for builds.
-          test -x "$ANDROID_HOME/platform-tools/adb"
-          test -d "$ANDROID_HOME/build-tools/35.0.0"
-          test -d "$ANDROID_HOME/platforms/android-35"
           if [ ! -e "$ANDROID_HOME/tools" ]; then
             ln -s "$ANDROID_HOME/cmdline-tools/latest" "$ANDROID_HOME/tools"
           fi
-          test -x "$ANDROID_HOME/tools/bin/sdkmanager"
+          mkdir -p "$HOME/.bubblewrap"
+          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$ANDROID_HOME" > "$HOME/.bubblewrap/config.json"
+          npm install --global @bubblewrap/cli@1.27.0
           bubblewrap updateConfig --jdkPath="$JAVA_HOME" --androidSdkPath="$ANDROID_HOME"
           bubblewrap doctor
 
-          if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ]; then
-            test -n "${ANDROID_KEYSTORE_PASSWORD:-}" || { echo "ANDROID_KEYSTORE_PASSWORD secret is required with ANDROID_KEYSTORE_BASE64"; exit 1; }
-            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android.keystore
-            KS_PASS="$ANDROID_KEYSTORE_PASSWORD"
-            KEY_PASS="${ANDROID_KEY_PASSWORD:-$ANDROID_KEYSTORE_PASSWORD}"
-          else
-            echo "::warning::No persistent Android signing keystore configured. This run will create a temporary signing key; the APK is for initial testing only and future builds will not update-install over it."
-            KS_PASS="ScoutTemp-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-            KEY_PASS="$KS_PASS"
-            keytool -genkeypair -v               -keystore android.keystore               -storepass "$KS_PASS"               -keypass "$KEY_PASS"               -alias scout               -keyalg RSA -keysize 2048 -validity 10000               -dname "CN=Scout, OU=Android, O=Scout, L=Mumbai, ST=Maharashtra, C=IN"
-          fi
-
-          echo "BUBBLEWRAP_KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
-          echo "BUBBLEWRAP_KEY_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
-
-          bubblewrap update --skipVersionUpgrade --manifest=./twa-manifest.json
-
-      - name: Build TWA APK
-        working-directory: twa
-        run: bubblewrap build --skipPwaValidation --manifest=./twa-manifest.json
-
-      - name: Verify TWA APK
+      - name: Restore persistent Cine signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          test -s twa/app-release-signed.apk
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging twa/app-release-signed.apk | grep -F "package: name='app.cine'"
+          test -n "$KEYSTORE_B64" || { echo "::error::ANDROID_KEYSTORE_BASE64 secret is missing. Refusing to generate a temporary release key."; exit 1; }
+          test -n "$KEYSTORE_PASSWORD" || { echo "::error::ANDROID_KEYSTORE_PASSWORD secret is missing."; exit 1; }
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > android.keystore
+          chmod 600 android.keystore
+          test -s android.keystore
+          KEY_ALIAS="$(node -e "const t=require('./twa-manifest.json');process.stdout.write(t.signingKey.alias)")"
+          ACTUAL_FINGERPRINT="$(keytool -list -v -keystore android.keystore -alias "$KEY_ALIAS" -storepass "$KEYSTORE_PASSWORD" -keypass "${KEY_PASSWORD:-$KEYSTORE_PASSWORD}" | awk -F ': ' '/SHA256:/{print $2; exit}')"
+          test -n "$ACTUAL_FINGERPRINT" || { echo "::error::Could not read SHA-256 fingerprint from persistent keystore."; exit 1; }
+          echo "Signing certificate SHA-256: $ACTUAL_FINGERPRINT"
+          echo "$ACTUAL_FINGERPRINT" > signing-fingerprint.txt
+          echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "KEY_PASSWORD=${KEY_PASSWORD:-$KEYSTORE_PASSWORD}" >> "$GITHUB_ENV"
+          echo "KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
 
-      - name: Upload TWA APK
+      - name: Verify live website and Digital Asset Links
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://scout.edgeone.dev"
+          for path in "/" "/manifest.webmanifest" "/sw.js" "/icons/cine.svg" "/.well-known/assetlinks.json"; do
+            code="$(curl -L --connect-timeout 5 --max-time 20 -sS -o "/tmp/$(echo "$path" | tr '/.' '__')" -w '%{http_code}' "$BASE$path")"
+            echo "HTTP $code $path"
+            test "$code" = "200" || { echo "::error::Live endpoint failed: $path"; exit 1; }
+          done
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const live = JSON.parse(fs.readFileSync('/tmp/__manifest_webmanifest', 'utf8'));
+          const repo = JSON.parse(fs.readFileSync('manifest.webmanifest', 'utf8'));
+          if (live.name !== repo.name || live.start_url !== repo.start_url) throw new Error('Live PWA manifest does not match checked-out source');
+          NODE
+          FINGERPRINT="$(cat signing-fingerprint.txt | tr '[:lower:]' '[:upper:]' | tr -d ':')"
+          node - "$FINGERPRINT" <<'NODE'
+          const fs = require('node:fs');
+          const expected = process.argv[2];
+          const links = JSON.parse(fs.readFileSync('/tmp/__well-known_assetlinks_json', 'utf8'));
+          const ok = Array.isArray(links) && links.some(x =>
+            x.target?.namespace === 'android_app' &&
+            x.target?.package_name === 'app.cine' &&
+            x.relation?.includes('delegate_permission/common.handle_all_urls') &&
+            x.target?.sha256_cert_fingerprints?.some(f => f.replace(/:/g, '').toUpperCase() === expected)
+          );
+          if (!ok) throw new Error('Live Digital Asset Links do not match app.cine and the configured persistent signing certificate. Update /.well-known/assetlinks.json with the fingerprint printed in the Restore signing key step.');
+          console.log('Digital Asset Links match app.cine and release signing certificate.');
+          NODE
+
+      - name: Generate Android project from TWA manifest
+        run: bubblewrap update --skipVersionUpgrade --manifest=./twa-manifest.json
+
+      - name: Build signed APK and AAB
+        run: |
+          set -euo pipefail
+          bubblewrap build --manifest=./twa-manifest.json --signingKeyPath=./android.keystore --signingKeyAlias="$KEY_ALIAS"
+          test -s app-release-signed.apk
+          test -s app-release-bundle.aab
+          mkdir -p release
+          cp app-release-signed.apk release/
+          cp app-release-bundle.aab release/
+          cp signing-fingerprint.txt release/
+          sha256sum release/* > release/SHA256SUMS.txt
+
+      - name: Upload Cine Android artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: scout-twa-apk
-          path: twa/app-release-signed.apk
+          name: cine-android
+          path: release/*
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
