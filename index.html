@@ -1462,43 +1462,70 @@ function cosineSimilarity(a, b) {
   return aa && bb ? dot / (Math.sqrt(aa) * Math.sqrt(bb)) : 0;
 }
 
-async function embedTitle(t) {
-  if (!t || !t.id) return null;
-  if (t._emb) return t._emb;
-  const key = 'cine.emb:' + t.id;
-  try {
-    const saved = LS.get(key);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length) { t._emb = parsed; return parsed; }
-    }
-  } catch (e) {}
-  const text = [t.title || '', (t.genres || []).join(' '), t.year || ''].filter(Boolean).join(' ');
-  const emb = await aiCall('embed', text);
-  if (emb && emb.length) {
-    t._emb = emb;
-    try { LS.set(key, JSON.stringify(emb)); } catch (e) {}
-    return emb;
+/* Semantic vectors use IndexedDB; each saved vector is durable and resumable. */
+const MoodVectorDB = (() => {
+  const DB_NAME='cine-semantic-v1', STORE='vectors', MAX_ENTRIES=1800;
+  let opening;
+  function open() {
+    if (!('indexedDB' in window)) return Promise.resolve(null);
+    if (!opening) opening = new Promise(resolve => {
+      const req=indexedDB.open(DB_NAME,1);
+      req.onupgradeneeded=()=>{ const db=req.result; if(!db.objectStoreNames.contains(STORE)){const st=db.createObjectStore(STORE,{keyPath:'key'});st.createIndex('touched','touched');} };
+      req.onsuccess=()=>resolve(req.result); req.onerror=req.onblocked=()=>resolve(null);
+    });
+    return opening;
   }
-  return null;
+  async function get(key) {
+    const db=await open(); if(!db)return null;
+    return new Promise(resolve=>{try{const q=db.transaction(STORE,'readonly').objectStore(STORE).get(key);q.onsuccess=()=>resolve(q.result&&Array.isArray(q.result.vector)?q.result.vector:null);q.onerror=()=>resolve(null);}catch(_){resolve(null);}});
+  }
+  async function trim(keepKey='') {
+    const db=await open();if(!db)return false;
+    return new Promise(resolve=>{try{const tx=db.transaction(STORE,'readwrite'),st=tx.objectStore(STORE),q=st.getAll();q.onsuccess=()=>{const rows=(q.result||[]).sort((a,b)=>(a.touched||0)-(b.touched||0));rows.filter(x=>x.key!==keepKey).slice(0,Math.max(1,rows.length-MAX_ENTRIES+1)).forEach(x=>st.delete(x.key));};tx.oncomplete=()=>resolve(true);tx.onerror=tx.onabort=()=>resolve(false);}catch(_){resolve(false);}});
+  }
+  async function set(key, vector) {
+    const db=await open();if(!db)return false;
+    const write=()=>new Promise(resolve=>{try{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put({key,vector:Array.from(vector),touched:Date.now()});tx.oncomplete=()=>resolve(true);tx.onerror=tx.onabort=()=>resolve(false);}catch(_){resolve(false);}});
+    if(await write())return true; await trim(key); return await write();
+  }
+  return {get,set,trim};
+})();
+const embedQueue=[], embedJobs=new Map();
+let embedActive=0, embedPumpTimer=0, aiWarmScheduled=false;
+const EMBED_CONCURRENCY=2;
+function scheduleEmbedPump(delay=120){if(embedPumpTimer)return;embedPumpTimer=setTimeout(()=>{embedPumpTimer=0;pumpEmbedQueue();},delay);}
+function pumpEmbedQueue(){
+  while(embedActive<EMBED_CONCURRENCY&&embedQueue.length){
+    const job=embedQueue.shift();embedActive++;
+    (async()=>{try{
+      let vector=await MoodVectorDB.get(job.key);
+      for(let attempt=0;!vector&&attempt<3;attempt++){
+        vector=await aiCall('embed',job.text,45000);
+        if(!vector)await new Promise(resolve=>setTimeout(resolve,350*(2**attempt)));
+      }
+      if(vector){job.title._emb=vector;const saved=await MoodVectorDB.set(job.key,vector);if(!saved){await MoodVectorDB.trim(job.key);await MoodVectorDB.set(job.key,vector);}}
+      job.resolve(vector||null);
+    }catch(_){job.resolve(null);}finally{embedJobs.delete(job.key);embedActive--;if(embedQueue.length)scheduleEmbedPump(80);}})();
+  }
 }
-let aiWarmScheduled = false;
-function scheduleMoodEmbeddingWarmup() {
-  if (aiWarmScheduled || POOL.size < 20) return;
-  aiWarmScheduled = true;
-  (async () => {
-    const ready = await Promise.race([aiReadyPromise, new Promise(resolve => setTimeout(() => resolve(false), 120000))]);
-    if (!ready) return;
-    const batch = [...POOL.values()].slice(0, 100);
-    for (let i = 0; i < batch.length; i++) {
-      if (!batch[i]._emb) await embedTitle(batch[i]);
-      if (i % 4 === 3) await new Promise(resolve => setTimeout(resolve, 0));
-    }
-  })().catch(() => {});
+function embedTitle(t){
+  if(!t||!t.id)return Promise.resolve(null);if(t._emb)return Promise.resolve(t._emb);
+  const key=((t.source==='tmdb'||String(t.id).startsWith('tmdb:'))?'tmdb.emb:':'cine.emb:')+t.id;
+  if(embedJobs.has(key))return embedJobs.get(key).promise;
+  let resolve;const promise=new Promise(r=>{resolve=r;});
+  const text=[t.title||'',t.overview||'',(t.genres||[]).join(' '),t.year||''].filter(Boolean).join('. ').slice(0,1800);
+  embedJobs.set(key,{promise,resolve});embedQueue.push({key,title:t,text,resolve});scheduleEmbedPump(120);return promise;
+}
+function preEmbedCatalogue(){
+  if(aiWarmScheduled||!POOL||!POOL.size)return;aiWarmScheduled=true;
+  (async()=>{const ready=await Promise.race([aiReadyPromise,new Promise(resolve=>setTimeout(()=>resolve(false),120000))]);if(!ready){aiWarmScheduled=false;return;}
+    for(const t of POOL.values()){if(!t._emb)embedTitle(t).catch(()=>{});await new Promise(resolve=>setTimeout(resolve,12));}
+  })().catch(()=>{aiWarmScheduled=false;});
 }
 
 let S = loadState();
 initAI();
+if (S.onboarded) setTimeout(preEmbedCatalogue, 2500);
 let shownSet = new Set(S.shown);   // O(1) membership; S.shown stays an array so it still serialises
 let _sc = null;                    // per-pass score context (genre/by/kw maxima), rebuilt once per recommend()
 let Q = { l: [0, 0], p: [0, 0] };   // quality lean: likes/passes weighted by watchability (was the v5 applyFeedback wrapper)
@@ -1879,24 +1906,20 @@ function moodQuote(v, genres) {
   const g = genres.slice(0, 2).join(' or ');
   return 'So: ' + pA + ', ' + wA + ', ' + dA + (g ? ' \u2014 leaning ' + g + '.' : '.');
 }
-function moodScore(t, vec, genres, promptEmbedding) {
-  const f = featOf(t);
-  const d = Math.abs(f.pace - vec[0]) + Math.abs(f.warmth - vec[1]) + Math.abs(f.depth - vec[2]) + Math.abs(f.scale - vec[3]);
-  const moodFit = clamp(1 - d / 4 * 1.3);
-  const taste = scoreTrack(t);
+function moodScore(t, vec, genres, promptEmbedding, semanticWeight=0) {
+  const f=featOf(t);
+  const d=Math.abs(f.pace-vec[0])+Math.abs(f.warmth-vec[1])+Math.abs(f.depth-vec[2])+Math.abs(f.scale-vec[3]);
+  const moodFit=clamp(1-d/4*1.3), taste=scoreTrack(t);
   let baseScore;
-  if (!genres || !genres.length) baseScore = .55 * moodFit + .45 * taste;
+  if(!genres||!genres.length)baseScore=.55*moodFit+.45*taste;
   else {
-    /* a named genre outweighs vibe and popularity: "romantic" must mean romance, not "sort of warm" */
-    const hits = (t.genres || []).filter(g => genres.includes(g)).length;
-    const genreFit = hits ? clamp(.62 + .38 * (hits / genres.length)) : 0;
-    baseScore = .34 * moodFit + .48 * genreFit + .18 * taste;
+    const hits=(t.genres||[]).filter(g=>genres.includes(g)).length;
+    const genreFit=hits?clamp(.62+.38*(hits/genres.length)):0;
+    baseScore=.34*moodFit+.48*genreFit+.18*taste;
   }
-  if (promptEmbedding && t._emb) {
-    const semScore = clamp((cosineSimilarity(promptEmbedding, t._emb) + 1) / 2);
-    return baseScore * .6 + semScore * .4;
-  }
-  return baseScore;
+  if(!promptEmbedding||!t._emb||!semanticWeight)return baseScore;
+  const semScore=clamp((cosineSimilarity(promptEmbedding,t._emb)+1)/2);
+  return baseScore*(1-semanticWeight)+semScore*semanticWeight;
 }
 const avoided = (t, plan) => !!(plan.avoid && plan.avoid.length && (t.genres || []).some(g => plan.avoid.includes(g)));
 function buildMood(plan, n) {
@@ -1934,14 +1957,14 @@ function mzPasses(t, plan) {
   return true;
 }
 function mzScoreAll(list, plan, promptEmbedding) {
-  const want = (plan.req && plan.req.length) ? plan.req : null;
-  const seen = new Set(), out = [];
-  list.forEach(t => {
-    if (!t || seen.has(t.id) || !mzPasses(t, plan)) return;
-    seen.add(t.id);
-    out.push({ t, s: moodScore(t, plan.vec, want, promptEmbedding) * (avoided(t, plan) ? .6 : 1) });
+  const want=(plan.req&&plan.req.length)?plan.req:null;
+  const explicit=!!((plan.req&&plan.req.length)||(plan.kws&&plan.kws.length));
+  const semanticWeight=!promptEmbedding?0:(explicit?.15:.35);
+  const seen=new Set(),out=[];
+  list.forEach(t=>{if(!t||seen.has(t.id)||!mzPasses(t,plan))return;seen.add(t.id);
+    out.push({t,s:moodScore(t,plan.vec,want,promptEmbedding,semanticWeight)*(avoided(t,plan)?.6:1)});
   });
-  return out.sort((a, b) => b.s - a.s);
+  return out.sort((a,b)=>b.s-a.s);
 }
 /* the plan as TMDB discover parameters; `drop` is the relaxation list */
 function mzQueryFor(plan, kind, drop) {
@@ -2780,12 +2803,12 @@ async function moodFind(plan, n, promptText) {
   const lim = n || 12;
   const local = [...POOL.values()];
   let promptEmbedding = null;
+  // Embed the prompt once per search; if the model is unavailable, stay lexicon-only.
   if (promptText && aiWorker && !aiInitFailed) {
-    const ready = await Promise.race([
-      aiReadyPromise,
-      new Promise(resolve => setTimeout(() => resolve(false), 90000))
-    ]);
-    if (ready) promptEmbedding = await aiCall('embed', promptText, 45000);
+    try {
+      const ready=await Promise.race([aiReadyPromise,new Promise(resolve=>setTimeout(()=>resolve(false),90000))]);
+      if(ready)promptEmbedding=await aiCall('embed',promptText,45000);
+    } catch (_) { promptEmbedding=null; }
   }
   let scored = mzScoreAll(local, plan, promptEmbedding), from = 'local';
   // Embed the strongest lexicon candidates on demand, then rerank them semantically.
@@ -3265,6 +3288,7 @@ function finishOb() {
   if (obGenres.size) applyGenreSeed();
   if (obFeat) ['pace', 'warmth', 'depth', 'scale'].forEach(k => { S.feat[k] = clamp(obFeat[k]); });
   S.onboarded = true; save(); closeOb(); DECK = []; ensureDeck(); renderDeck(); hud(); dailyPill(); rStrip(); rInsights();
+  setTimeout(preEmbedCatalogue, 1200); // warm the local catalogue after onboarding, in the background
   if (LS.get('cine.tour') !== '1') setTimeout(startTour, 900);
 }
 
