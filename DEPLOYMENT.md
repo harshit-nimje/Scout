@@ -68,15 +68,15 @@ supabase functions deploy tmdb --project-ref YOUR_PROJECT_REF --no-verify-jwt
 
 `--no-verify-jwt` is required because the app's catalogue is available to anonymous visitors. The function itself only forwards validated GET paths to TMDB and never returns the secret. Because this endpoint is intentionally public, the cache reduces repeated upstream calls but is not a complete abuse/rate-limit defense.
 
-## 6. Enable the hosted TMDB key in the frontend
+## 6. Verify the hosted TMDB URL in the frontend
 
-After the Supabase project exists, update the one-line switch near the TMDB engine code in `index.html`:
+The current `index.html` is wired to the project reference inferred from your CLI error:
 
 ```js
-const TMDB_PROXY = 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/tmdb';
+const TMDB_PROXY = 'https://qsddtnorjfudbmafzjdr.supabase.co/functions/v1/tmdb';
 ```
 
-Commit and upload the updated `index.html` to EdgeOne Pages. Until you replace this placeholder, cine stays in its existing demo / user-supplied-key mode; no private key is embedded in the app.
+Confirm `qsddtnorjfudbmafzjdr` matches the project reference shown in your Supabase dashboard. If it does not, replace only that URL with `https://YOUR_ACTUAL_PROJECT_REF.supabase.co/functions/v1/tmdb`, commit, and redeploy the static site to EdgeOne Pages. The TMDB key itself is never placed in the HTML.
 
 ## 7. Cloud sync
 
