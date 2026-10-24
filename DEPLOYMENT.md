@@ -34,7 +34,7 @@ create policy "update own" on public.cine_state
   with check (auth.uid() = user_id);
 ```
 
-The browser app uses only the public anon/publishable key that you enter in its Sync panel. RLS ensures a signed-in user can only read or modify the row whose `user_id` matches their authenticated ID. **Never put the service-role key in HTML or GitHub Actions build artifacts.**
+The browser app has its Supabase project URL and public publishable key configured in `index.html`; users do not enter backend credentials. A publishable key is intended for browser use. RLS ensures a signed-in user can only read or modify the row whose `user_id` matches their authenticated ID. **Never put the service-role key in HTML or GitHub Actions build artifacts.**
 
 ## 3. Auth URL configuration and Google (optional)
 
@@ -42,10 +42,10 @@ In Supabase → Authentication → URL Configuration:
 - Site URL: `https://scout.edgeone.dev`
 - Redirect URL allowlist: `https://scout.edgeone.dev/`
 
-In Google Cloud Console, create an OAuth Client ID of type **Web application**. Add this exact authorised redirect URI:
+In Supabase → Authentication → Providers, enable Email/password authentication. For Google sign-in, in Google Cloud Console create an OAuth Client ID of type **Web application**. Add this exact authorised redirect URI:
 `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
 
-Paste the Google client ID and client secret into Supabase → Authentication → Providers → Google. The email magic-link flow does not require Google. Magic-link redirects must use the site URL/allowlist above.
+Paste the Google client ID and client secret into Supabase → Authentication → Providers → Google. Email/password sign-up, sign-in and password reset use the site URL/allowlist above; Google sign-in also requires the provider credentials.
 
 ## 4. GitHub Actions secrets for the TMDB proxy
 
@@ -80,7 +80,7 @@ Confirm `qsddtnorjfudbmafzjdr` matches the project reference shown in your Supab
 
 ## 7. Cloud sync
 
-Open cine → Taste → Sync across devices. Enter the Supabase Project URL and the public anon/publishable key from Project Settings → API. This configuration remains in that device's local storage. The sync payload excludes TMDB caches and API keys. The service-role key is never needed by the browser.
+Open Scout → Taste → Sync across devices. Sign up with email/password or continue with Google; no project URL or key is requested from users. The app's public publishable key is configured in `index.html`. The sync payload excludes TMDB caches and API keys. The service-role key is never needed by the browser.
 
 ## 8. Android Trusted Web Activity (TWA)
 
@@ -97,5 +97,7 @@ It must contain the Android package name `app.cine` and the **actual SHA-256 fin
 - **401 from the function:** verify deployment included `--no-verify-jwt`.
 - **500 saying TMDB_KEY is not set:** check the GitHub Actions secrets and rerun the deployment workflow.
 - **Google redirect error:** verify the Google callback URI and Supabase redirect allowlist exactly.
-- **Sync 401/403:** confirm the app has the correct project URL/public anon key and the table RLS policies above are enabled.
+- **Sync 401/403:** confirm the configured project reference matches your Supabase project and the `cine_state` table/RLS policies above are enabled.
+- **Email sign-in fails:** verify Email provider is enabled in Supabase Auth and check whether email confirmation is required.
+- **Google sign-in fails:** configure the Google provider credentials and exact redirect URLs above.
 - **Offline first launch:** service worker caching only becomes available after the first successful online visit.
