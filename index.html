@@ -8,7 +8,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="color-scheme" content="dark">
 <meta name="application-name" content="cine">
-<link rel="manifest" href="/manifest.webmanifest">
 <meta name="description" content="Swipe films and series and cine learns your taste — a daily pick, a mood watchlist, a saved watchlist and a TMDB link.">
 <meta property="og:title" content="cine — swipe to find your next watch">
 <meta property="og:description" content="Swipe films and shows and cine learns your taste.">
@@ -1555,7 +1554,7 @@ const TM = { img: 'https://image.tmdb.org/t/p/', api: 'https://api.themoviedb.or
 
    Leave it empty and cine behaves exactly as before: whoever wants live data
    pastes their own key in the Taste tab. */
-const TMDB_PROXY = '';
+const TMDB_PROXY = 'https://qsddtnorjfudbmafzjdr.supabase.co/functions/v1/tmdb';
 const tmProxy = () => String(LS.get(CFG.tmdbProxy) || TMDB_PROXY || '').trim();
 const GEN = { 28:'Action',12:'Adventure',16:'Animation',35:'Comedy',80:'Crime',99:'Documentary',18:'Drama',10751:'Family',14:'Fantasy',36:'History',27:'Horror',10402:'Music',9648:'Mystery',10749:'Romance',878:'Sci-Fi',53:'Thriller',10752:'War',37:'Western',10759:'Action',10762:'Kids',10763:'News',10764:'Reality',10765:'Sci-Fi',10766:'Drama',10767:'Talk',10768:'War' };
 const img = (p, s) => p ? TM.img + s + p : null;
@@ -3226,10 +3225,5 @@ window.cloudTouch = cloudTouch;   // saveNow() (engine scope) calls this when st
 
 
 
-<script>
-if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
-}
-</script>
 </body>
 </html>
