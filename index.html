@@ -2806,7 +2806,18 @@ async function moodFind(plan, n, promptText) {
     for (let round = 0; round <= relax.length; round++) {
       const drop = round === 0 ? [] : relax[round - 1];
       const cat = await mzCatalog(plan, drop);
-      if (cat.length) { scored = mzScoreAll(local.concat(cat), plan, promptEmbedding); from = 'catalogue'; }
+      if (cat.length) {
+        const combined = local.concat(cat);
+        if (promptEmbedding) {
+          const preliminary = mzScoreAll(combined, plan, null);
+          const candidates = preliminary.slice(0, Math.max(40, lim * 4)).map(x => x.t);
+          for (let i = 0; i < candidates.length; i += 4) {
+            await Promise.all(candidates.slice(i, i + 4).map(t => embedTitle(t)));
+          }
+        }
+        scored = mzScoreAll(combined, plan, promptEmbedding);
+        from = 'catalogue';
+      }
       const enough = scored.filter(x => !(plan.req && plan.req.length) || (x.t.genres || []).some(g => plan.req.includes(g))).length;
       if (enough >= Math.min(8, lim) || !cat.length) break;
     }
