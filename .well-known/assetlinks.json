@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.cine",
+      "sha256_cert_fingerprints": [
+        "CC:83:8A:31:C9:E2:2F:40:5A:DA:E3:96:47:EB:CC:22:99:97:FC:45:96:95:89:27:16:61:24:5F:CF:39:F9:ED"
+      ]
+    }
+  }
+]
