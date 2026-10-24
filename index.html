@@ -3007,11 +3007,13 @@ mzWaveInit();
    in by the user, exactly like the TMDB key, and are never uploaded.
    ========================================================================== */
 const SBCFG = 'cine.sb', SBSESS = 'cine.sb.session', SBSEEN = 'cine.sb.seen', SBDIRTY = 'cine.sb.dirty';
-const sbCfg = () => { try { return JSON.parse(LS.get(SBCFG) || 'null'); } catch (e) { return null; } };
-const sbOk = () => { const c = sbCfg(); return !!(c && /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(c.u) && c.k); };
-const sbBase = () => (sbCfg() || {}).u || '';
+/* Public browser config: publishable/anon key only. Never put service-role secrets here. */
+const SB_DEFAULT = { u: 'https://qsddtnorjfudbmafzjdr.supabase.co', k: 'SET_SUPABASE_PUBLISHABLE_KEY_HERE' };
+const sbCfg = () => SB_DEFAULT;
+const sbOk = () => true;
+const sbBase = () => SB_DEFAULT.u;
 let sbSession = (() => { try { return JSON.parse(LS.get(SBSESS) || 'null'); } catch (e) { return null; } })();
-let sbUser = null, sbBusy = false, sbErr = '', sbSeen = +(LS.get(SBSEEN) || 0), sbPushT = 0;
+let sbUser = null, sbBusy = false, sbErr = '', sbSeen = +(LS.get(SBSEEN) || 0), sbPushT = 0, sbRecoveryMode = false, sbAuthMode = 'signin';
 
 function sbSaveSess(s) { sbSession = s; if (s) LS.set(SBSESS, JSON.stringify(s)); else LS.del(SBSESS); }
 async function sbFetch(path, opts) {
@@ -3034,6 +3036,23 @@ function sbSignInGoogle() {
   location.href = sbBase() + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(back);
 }
 const sbEmailLink = email => sbFetch('/auth/v1/otp', { method: 'POST', noauth: true, body: JSON.stringify({ email, create_user: true, gotrue_meta_security: {} }) });
+async function sbPasswordAuth(mode, email, password) {
+  const path = mode === 'signup' ? '/auth/v1/signup' : '/auth/v1/token?grant_type=password';
+  const result = await sbFetch(path, { method: 'POST', noauth: true, body: JSON.stringify({ email, password }) });
+  if (result && result.access_token) {
+    sbSaveSess(result); sbRecoveryMode = false; await sbLoadUser(); renderAcc(); await cloudSyncNow();
+    toast(mode === 'signup' ? 'Account created' : 'Signed in');
+  } else if (mode === 'signup') toast('Check your email to confirm your account');
+  else throw new Error('Sign-in did not return a session. Check email confirmation and credentials.');
+}
+async function sbRecoverPassword(email) {
+  await sbFetch('/auth/v1/recover', { method: 'POST', noauth: true, body: JSON.stringify({ email, redirect_to: location.origin + location.pathname }) });
+}
+async function sbSetNewPassword(password) {
+  await sbFetch('/auth/v1/user', { method: 'PUT', body: JSON.stringify({ password }) });
+  sbRecoveryMode = false; sbSaveSess(null); sbUser = null; sbErr = ''; renderAcc();
+  toast('Password updated. Sign in with your new password.');
+}
 async function sbRefresh() {
   if (!sbSession || !sbSession.refresh_token) return false;
   try {
@@ -3066,10 +3085,13 @@ function sbTakeHash() {
   const p = new URLSearchParams(h.slice(1));
   const at = p.get('access_token');
   const err = p.get('error_description') || p.get('error');
-  if (at) sbSaveSess({
-    access_token: at, refresh_token: p.get('refresh_token'),
-    expires_at: Date.now() + (+(p.get('expires_in') || 3600)) * 1000, token_type: p.get('token_type') || 'bearer'
-  });
+  if (at) {
+    sbRecoveryMode = p.get('type') === 'recovery';
+    sbSaveSess({
+      access_token: at, refresh_token: p.get('refresh_token'),
+      expires_at: Date.now() + (+(p.get('expires_in') || 3600)) * 1000, token_type: p.get('token_type') || 'bearer'
+    });
+  }
   else if (err) sbErr = decodeURIComponent(String(err).replace(/\+/g, ' '));
   history.replaceState(null, '', location.pathname + location.search);
   return !!at;
@@ -3144,17 +3166,9 @@ async function cloudSyncNow() {
 /* ---- panel ---- */
 function renderAcc() {
   const el = $('#accBody'); if (!el) return;
-  if (!sbOk()) {
-    el.innerHTML = '<p class="sub" style="margin-bottom:2px">Keep your taste, watchlist and history on every device you swipe on.</p>'
-      + '<div class="accrow"><input id="sbU" placeholder="https://your-project.supabase.co" autocomplete="off" autocapitalize="off" spellcheck="false"><input id="sbK" placeholder="anon public key" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn" id="sbSaveCfg">Connect</button></div>'
-      + '<div class="accnote">Free — it runs on your own Supabase project, so your data stays yours. Create one, run the setup SQL once, then paste the project URL and the <b>anon public</b> key. This config and your TMDB key stay on this device.</div>';
-    $('#sbSaveCfg').onclick = () => {
-      const u = ($('#sbU').value || '').trim().replace(/\/+$/, ''), k = ($('#sbK').value || '').trim();
-      if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(u)) return toast('That does not look like a Supabase project URL', true);
-      if (!k) return toast('Paste the anon public key too', true);
-      if (!LS.set(SBCFG, JSON.stringify({ u, k }))) return toast('This browser blocks storage', true);
-      location.reload();
-    };
+  if (sbRecoveryMode) {
+    el.innerHTML = '<p class="sub" style="margin-bottom:2px">Choose a new password for your Scout account.</p><div class="accrow"><input id="sbNewPassword" type="password" placeholder="New password (8+ characters)" autocomplete="new-password"><button class="btn" id="sbSetPassword">Update password</button></div>' + (sbErr ? '<div class="accnote" style="color:var(--nope)">' + esc(sbErr) + '</div>' : '');
+    $('#sbSetPassword').onclick = async () => { const p = $('#sbNewPassword').value || ''; if (p.length < 8) return toast('Use at least 8 characters for your password', true); try { await sbSetNewPassword(p); } catch (err) { sbErr = (err && err.message) || 'Could not update password'; renderAcc(); } };
     return;
   }
   if (!sbSession || !sbUser) {
@@ -3166,19 +3180,12 @@ function renderAcc() {
       $('#sbOutB').onclick = () => { sbSignOut(); renderAcc(); toast('Signed out'); };
       return;
     }
-    el.innerHTML = '<p class="sub" style="margin-bottom:2px">Sign in to carry your taste across devices. No password — Google or an emailed link.</p>'
-      + '<div class="accrow"><button class="btn accg" id="sbGoogle">Continue with Google</button></div>'
-      + '<div class="accrow"><input id="sbEmail" type="email" placeholder="you@email.com" autocomplete="email" autocapitalize="off" spellcheck="false"><button class="btn ghost" id="sbLink">Email me a link</button></div>'
-      + (sbErr ? '<div class="accnote" style="color:var(--nope)">' + esc(sbErr) + '</div>' : '')
-      + '<div class="accnote">Your TMDB key and your project config never leave this device. <button class="lnk" id="sbReset">Use a different project</button></div>';
+    el.innerHTML = '<p class="sub" style="margin-bottom:2px">Sign in to sync your watchlist, ratings and history across devices.</p><div class="accrow"><button class="btn accg" id="sbGoogle">Continue with Google</button></div><div class="accrow"><button class="btn ghost" id="sbModeSignIn">Sign in</button><button class="btn ghost" id="sbModeSignUp">Create account</button></div><div class="accrow"><input id="sbEmail" type="email" placeholder="you@email.com" autocomplete="email" autocapitalize="off" spellcheck="false"></div><div class="accrow"><input id="sbPassword" type="password" placeholder="Password (8+ characters)" autocomplete="' + (sbAuthMode === 'signup' ? 'new-password' : 'current-password') + '"><button class="btn" id="sbPasswordGo">' + (sbAuthMode === 'signup' ? 'Create account' : 'Sign in') + '</button></div><div class="accrow"><button class="btn ghost" id="sbForgot">Forgot password?</button></div><div class="accnote">' + (sbAuthMode === 'signup' ? 'You may need to confirm your email before signing in.' : 'Use your email and password, or continue with Google.') + '</div>' + (sbErr ? '<div class="accnote" style="color:var(--nope)">' + esc(sbErr) + '</div>' : '') + '<div class="accnote">No project URL or key setup required.</div>';
     $('#sbGoogle').onclick = sbSignInGoogle;
-    $('#sbLink').onclick = async () => {
-      const e = ($('#sbEmail').value || '').trim();
-      if (e.indexOf('@') < 1) return toast('Enter your email first', true);
-      try { await sbEmailLink(e); toast('Check your inbox for the sign-in link'); }
-      catch (err) { sbErr = (err && err.message) || 'Could not send the link'; renderAcc(); }
-    };
-    $('#sbReset').onclick = () => { LS.del(SBCFG); LS.del(SBSESS); location.reload(); };
+    $('#sbModeSignIn').onclick = () => { sbAuthMode = 'signin'; sbErr = ''; renderAcc(); };
+    $('#sbModeSignUp').onclick = () => { sbAuthMode = 'signup'; sbErr = ''; renderAcc(); };
+    $('#sbPasswordGo').onclick = async () => { const e = ($('#sbEmail').value || '').trim(), p = $('#sbPassword').value || ''; if (e.indexOf('@') < 1) return toast('Enter a valid email first', true); if (p.length < 8) return toast('Use a password with at least 8 characters', true); const b = $('#sbPasswordGo'); b.disabled = true; b.textContent = 'Please wait…'; try { await sbPasswordAuth(sbAuthMode, e, p); } catch (err) { sbErr = (err && err.message) || 'Authentication failed'; renderAcc(); } };
+    $('#sbForgot').onclick = async () => { const e = ($('#sbEmail').value || '').trim(); if (e.indexOf('@') < 1) return toast('Enter a valid email first', true); try { await sbRecoverPassword(e); toast('Password reset email sent — check your inbox'); } catch (err) { sbErr = (err && err.message) || 'Could not send reset email'; renderAcc(); } };
     return;
   }
   el.innerHTML = '<div class="accid"><span class="accdot' + (sbBusy ? ' busy' : ' on') + '"></span><b>' + esc(sbUser.email || 'Signed in') + '</b></div>'
