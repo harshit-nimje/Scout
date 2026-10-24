@@ -1441,14 +1441,14 @@ function initAI() {
   }
 }
 
-function aiCall(type, data) {
+function aiCall(type, data, timeoutMs) {
   return new Promise(resolve => {
     if (!aiWorker || aiInitFailed) return resolve(null);
     const id = 'ai-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
     const timer = setTimeout(() => {
       aiPending.delete(id);
-      resolve(null); // 2-second budget: semantic boost is optional
-    }, 2000);
+      resolve(null);
+    }, timeoutMs || (type === 'embed' ? 45000 : 15000));
     aiPending.set(id, { resolve, timer });
     try { aiWorker.postMessage({ type, data, id }); }
     catch (e) { clearTimeout(timer); aiPending.delete(id); resolve(null); }
@@ -2780,8 +2780,24 @@ async function moodFind(plan, n, promptText) {
   const lim = n || 12;
   const local = [...POOL.values()];
   let promptEmbedding = null;
-  if (promptText) promptEmbedding = await aiCall('embed', promptText);
+  if (promptText && aiWorker && !aiInitFailed) {
+    const ready = await Promise.race([
+      aiReadyPromise,
+      new Promise(resolve => setTimeout(() => resolve(false), 90000))
+    ]);
+    if (ready) promptEmbedding = await aiCall('embed', promptText, 45000);
+  }
   let scored = mzScoreAll(local, plan, promptEmbedding), from = 'local';
+  // Embed the strongest lexicon candidates on demand, then rerank them semantically.
+  // The previous warm-up only embedded a small, arbitrary prefix of POOL and silently
+  // left most candidates without vectors, so the semantic score often did nothing.
+  if (promptEmbedding) {
+    const candidates = scored.slice(0, Math.max(40, lim * 4)).map(x => x.t);
+    for (let i = 0; i < candidates.length; i += 4) {
+      await Promise.all(candidates.slice(i, i + 4).map(t => embedTitle(t)));
+    }
+    scored = mzScoreAll(local, plan, promptEmbedding);
+  }
   if (TMC && TMC.discover && plan.constrained) {
     if (plan.kws && plan.kws.length) plan._kwids = await mzKeywordIds(plan.kws);
     const relax = [];
