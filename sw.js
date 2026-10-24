@@ -1,5 +1,5 @@
 /* cine offline shell. Bump CACHE_NAME when the shell asset list changes. */
-const CACHE_NAME = 'cine-shell-v1';
+const CACHE_NAME = 'cine-shell-v2';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icons/cine.svg'];
 
 self.addEventListener('install', event => {
