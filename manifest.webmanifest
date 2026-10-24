@@ -1,10 +1,10 @@
 {
   "id": "/",
-  "name": "cine",
-  "short_name": "cine",
-  "description": "Swipe films and series and cine learns your taste — a daily pick, a mood watchlist, a saved watchlist and a TMDB link.",
+  "name": "Cine",
+  "short_name": "Cine",
+  "description": "Swipe films and series. Cine learns your taste and helps you find your next watch.",
   "lang": "en",
-  "start_url": "/",
+  "start_url": "/?source=twa",
   "scope": "/",
   "display": "standalone",
   "display_override": [
