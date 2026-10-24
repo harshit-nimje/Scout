@@ -235,60 +235,233 @@ summary{cursor:pointer;color:var(--ink);font-weight:600;font-size:14px}
 .note{color:var(--dim);font-size:13px;margin-top:14px;text-align:center}
 
 /* ---------- onboarding ---------- */
-#onboard{position:fixed;inset:0;z-index:20;display:none;place-items:center;overflow:hidden}
+#onboard{position:fixed;inset:0;z-index:20;display:none;place-items:center;overflow:hidden;
+  background:radial-gradient(125% 85% at 50% -10%,#1d1729 0%,#120f19 42%,var(--bg) 72%,#07060a 100%)}
 #onboard.open{display:grid}
 #onboard>*{position:relative;z-index:1}
-#onboard>.orb{position:absolute;border-radius:50%;filter:blur(56px);opacity:.34;animation:drift 14s ease-in-out infinite alternate;transition:translate 1.6s var(--ease),scale 1.6s var(--ease),opacity 1.2s,background-color 1s}
-.orb.a{width:46vmax;height:46vmax;left:-14vmax;top:-16vmax;background:#ff5c8a}
-.orb.b{width:42vmax;height:42vmax;right:-12vmax;bottom:-14vmax;background:#5b86ff;animation-delay:-6s}
-.orb.c{width:28vmax;height:28vmax;left:40%;top:30%;background:#ffc65a;opacity:.16;animation-delay:-3s}
+#onboard:after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(115% 75% at 50% 42%,transparent 38%,rgba(5,4,8,.78) 100%)}
+#onboard>.orb{position:absolute;border-radius:50%;filter:blur(72px);opacity:.28;z-index:0;
+  animation:drift 19s ease-in-out infinite alternate;
+  transition:translate 2.2s var(--ease),scale 2.2s var(--ease),opacity 1.6s,background-color 1.4s}
+.orb.a{width:50vmax;height:50vmax;left:-17vmax;top:-19vmax;background:#ff5c8a}
+.orb.b{width:46vmax;height:46vmax;right:-15vmax;bottom:-17vmax;background:#5b86ff;animation-delay:-7s}
+.orb.c{width:30vmax;height:30vmax;left:38%;top:26%;background:#ffc65a;opacity:.13;animation-delay:-3s}
 @keyframes drift{to{transform:translate(8vmax,6vmax) scale(1.18)}}
-.ob{width:min(600px,100%);height:min(100dvh,780px);max-height:none;display:flex;flex-direction:column;padding:max(18px,env(safe-area-inset-top)) 22px max(22px,env(safe-area-inset-bottom))}
-.dots{display:flex;gap:8px;margin-bottom:26px;flex:none}
-.dots i{height:4px;flex:1;border-radius:4px;background:var(--line);position:relative;overflow:hidden}
-.dots i:after{content:"";position:absolute;inset:0;background:var(--ink);transform:scaleX(0);transform-origin:left;transition:transform .7s var(--ease)}
-.dots i.on:after{transform:scaleX(1)}
-.step{flex:1;display:flex;flex-direction:column;min-height:0;overflow-y:auto;padding-bottom:4px}
-.step.fwd{animation:obF .6s var(--ease)}.step.bck{animation:obB .6s var(--ease)}
+
+.ob{width:min(620px,100%);height:min(100dvh,820px);display:flex;flex-direction:column;
+  padding:max(20px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom))}
+
+/* brand + progress */
+.obhead{flex:none;display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
+.obbrand{font:800 22px var(--d);letter-spacing:-.045em;display:flex;align-items:baseline}
+.obbrand i{color:var(--like);font-style:normal}
+.obstepno{margin-left:auto;font:600 10.5px var(--b);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.obbar{flex:none;height:3px;border-radius:99px;background:rgba(239,230,210,.1);overflow:hidden;margin-bottom:28px}
+.obbar b{display:block;height:100%;border-radius:99px;transform-origin:left;transform:scaleX(.166);
+  background:linear-gradient(90deg,var(--like),#f2d894);
+  box-shadow:0 0 12px rgba(217,164,65,.6);transition:transform .72s var(--ease)}
+
+.step{flex:1;display:flex;flex-direction:column;min-height:0}
+.step.fwd{animation:obF .55s var(--ease)}.step.bck{animation:obB .55s var(--ease)}
 @keyframes obF{from{opacity:0;transform:translateX(38px)}}@keyframes obB{from{opacity:0;transform:translateX(-38px)}}
-.step>*{animation:rise .6s var(--ease) backwards;flex-shrink:0}
-.step>:nth-child(2){animation-delay:.08s}.step>:nth-child(3){animation-delay:.16s}.step>:nth-child(4){animation-delay:.24s}
-.eq{display:flex;gap:5px;height:56px;align-items:center;margin-bottom:22px}
-.eq i{width:5px;height:100%;border-radius:4px;background:linear-gradient(var(--like),var(--nope));animation:eq 1s ease-in-out infinite alternate}
-@keyframes eq{from{transform:scaleY(.12)}to{transform:scaleY(1)}}
-.reveal{font:800 clamp(38px,8vw,58px)/1 var(--d);letter-spacing:-.04em;margin:8px 0 14px}
-.pl{font-size:18px;line-height:1.45;margin-bottom:16px;color:rgba(255,255,255,.85)}.pl b{color:var(--like);font-weight:600}
-.obnav{position:sticky;bottom:0;z-index:3;margin-top:auto;padding:20px 0 max(4px,env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+/* margin:auto centres short steps and still scrolls tall ones from the top */
+.obody{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+.obody::-webkit-scrollbar{display:none}
+.obc{margin:auto 0;width:100%}
+.obc>*{animation:rise .6s var(--ease) backwards}
+.obc>*:nth-child(2){animation-delay:0.05s}
+.obc>*:nth-child(3){animation-delay:0.1s}
+.obc>*:nth-child(4){animation-delay:0.15s}
+.obc>*:nth-child(5){animation-delay:0.2s}
+.obc>*:nth-child(6){animation-delay:0.25s}
+.obc>*:nth-child(7){animation-delay:0.3s}
+.obc>*:nth-child(8){animation-delay:0.35s}
+.obc>*:nth-child(9){animation-delay:0.4s}
+.obc>*:nth-child(10){animation-delay:0.45s}
+.obc>*:nth-child(11){animation-delay:0.5s}
+.obc>*:nth-child(12){animation-delay:0.55s}
+
+.eyeb{font:600 10.5px var(--b);letter-spacing:.2em;text-transform:uppercase;color:var(--like);opacity:.92;margin-bottom:11px}
+.reveal{font:800 clamp(34px,8.4vw,52px)/1.02 var(--d);letter-spacing:-.042em;margin:0 0 13px}
+.pl{font-size:16.5px;line-height:1.5;margin:0 0 15px;color:rgba(239,230,210,.76)}
+.pl b{color:var(--like);font-weight:600}
+
+.obnav{position:sticky;bottom:0;z-index:3;flex:none;margin-top:22px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  padding:20px 0 max(6px,env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(10,8,15,0),rgba(10,8,15,.95) 30%,#0a080f 62%)}
 .obnav .sp{flex:1}
 .obnav.col{flex-direction:column;align-items:stretch;gap:2px}
 .obx{display:flex;justify-content:space-between}
-.obx .lnk{margin:0;flex:1;min-height:44px;display:grid;place-items:center;color:var(--dim);font-size:14px;text-decoration:none}
-.lnk{display:block;margin-top:16px;color:var(--dim);text-decoration:underline;font-size:14px}
-.btn.big{height:56px;font-size:17px;width:100%;animation:cta 2.8s ease-in-out infinite}
-@keyframes cta{50%{box-shadow:0 0 0 9px rgba(246,241,234,.1)}}
-.btn.big:active{animation:none}
-.sl{margin:18px 0}.sl>div{display:flex;justify-content:space-between;color:var(--dim);font-size:14px;margin-bottom:8px}
-input[type=range]{-webkit-appearance:none;appearance:none;height:3px;border-radius:9px;background:linear-gradient(90deg,var(--nope),var(--like));padding:0;border:0;margin:8px 0 0;width:100%}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.5);cursor:grab}
-input[type=range]::-moz-range-thumb{width:28px;height:28px;border:0;border-radius:50%;background:var(--ink)}
-.hero0{position:relative;flex:1 0 auto;min-height:210px;max-height:320px;display:grid;place-items:center;margin:2px 0 12px}
-.hero0:before{content:"";position:absolute;width:72%;aspect-ratio:1;border-radius:50%;filter:blur(28px);animation:breathe 4s ease-in-out infinite alternate}
-@keyframes breathe{to{scale:1.22;opacity:.65}}
-.deck0{position:relative;height:calc(100% - 30px);align-self:start;max-height:290px;aspect-ratio:2/3;max-width:72%}
-.c0{position:absolute;inset:0;border-radius:22px;transform-origin:50% 92%;transition:transform .6s var(--ease),opacity .45s,filter .5s}
-.c0[data-p="0"]{z-index:3;animation:f0 4.2s ease-in-out infinite}
-.c0[data-p="1"]{z-index:2;transform:translateY(12px) scale(.94);filter:brightness(.7)}
-.c0[data-p="2"]{z-index:1;transform:translateY(24px) scale(.88);filter:brightness(.5)}
-@keyframes f0{50%{translate:0 -5px}}
-.c0f{position:absolute;inset:0;border-radius:inherit;overflow:hidden;background:linear-gradient(160deg,hsl(var(--h,280) 55% 35%),#1a1326);box-shadow:0 24px 50px -16px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.14)}
-.c0f img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.c0f:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,6,18,.15),transparent 32%,transparent 46%,rgba(10,6,18,.92))}
-.c0s{position:absolute;top:12px;left:14px;z-index:2}.c0s b{display:block;font:800 30px/.9 var(--d);letter-spacing:-.05em}
-.c0s small{font:600 11px var(--b);opacity:.85}
-.c0i{position:absolute;left:14px;right:14px;bottom:14px;z-index:2}
-.c0i h3{font:800 18px/1.08 var(--d);letter-spacing:-.025em;margin:0 0 3px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
-.c0i p{font-size:13px;color:rgba(255,255,255,.78);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.obx .lnk{margin:0;flex:1;min-height:44px;display:grid;place-items:center;color:var(--dim);font-size:14px;
+  text-decoration:none;background:none;border:0;font-family:inherit;cursor:pointer}
+.btn.big{height:58px;font-size:17px;width:100%;border-radius:99px;animation:cta 3.2s ease-in-out infinite}
+.btn.big:active{animation:none;transform:scale(.985)}
+@keyframes cta{50%{box-shadow:0 0 0 9px rgba(239,230,210,.1)}}
 
+/* hero */
+.hero0{position:relative;display:grid;place-items:center;margin:0 0 26px;padding-top:6px}
+.hero0:before{content:"";position:absolute;width:64%;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle,rgba(217,164,65,.5),transparent 70%);filter:blur(36px);
+  animation:breathe 5s ease-in-out infinite alternate}
+@keyframes breathe{to{scale:1.24;opacity:.62}}
+.deck0{position:relative;height:clamp(186px,32vh,262px);aspect-ratio:2/3;max-width:74%}
+.c0{position:absolute;inset:0;border-radius:20px;transform-origin:50% 92%;
+  transition:transform .7s var(--ease),opacity .5s,filter .6s}
+.c0[data-p="0"]{z-index:3;animation:f0 5.5s ease-in-out infinite,demo 6.8s var(--ease) infinite}
+.c0[data-p="1"]{z-index:2;transform:translateY(13px) scale(.93) rotate(2.2deg);filter:brightness(.6)}
+.c0[data-p="2"]{z-index:1;transform:translateY(26px) scale(.86) rotate(-4.5deg);filter:brightness(.4)}
+@keyframes f0{50%{translate:0 -6px}}
+.c0f{position:absolute;inset:0;border-radius:inherit;overflow:hidden;
+  background:linear-gradient(158deg,hsl(var(--h,280) 52% 38%),#191426);
+  box-shadow:0 28px 56px -18px rgba(0,0,0,.82),0 0 0 1px rgba(255,255,255,.16)}
+.c0f img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.c0f:after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(10,6,18,.12),transparent 34%,transparent 44%,rgba(10,6,18,.94))}
+.c0s{position:absolute;top:13px;left:15px;z-index:2}
+.c0s b{display:block;font:800 30px/.9 var(--d);letter-spacing:-.05em}
+.c0s small{font:600 11px var(--b);opacity:.85}
+.c0i{position:absolute;left:15px;right:15px;bottom:15px;z-index:2}
+.c0i h3{font:800 18px/1.08 var(--d);letter-spacing:-.025em;margin:0 0 3px;display:-webkit-box;
+  -webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.c0i p{font-size:13px;color:rgba(255,255,255,.76);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.swhint{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:20px;color:var(--dim);font-size:12.5px}
+.swhint i{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-style:normal;flex:none}
+.swhint svg{width:15px;height:15px;opacity:.8}
+
+/* chips (scoped so the rest of the app keeps its own) */
+#onboard .chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:0}
+#onboard .chip{position:relative;aspect-ratio:1;display:flex;flex-direction:column;justify-content:flex-end;
+  align-items:flex-start;padding:8px;border-radius:0;border:1px solid rgba(239,230,210,.14);
+  background:rgba(255,255,255,.02);color:var(--ink);font:600 11.5px/1.15 var(--b);letter-spacing:-.01em;
+  text-align:left;overflow:hidden;
+  transition:background .28s var(--ease),border-color .28s,color .28s,transform .16s var(--ease)}
+/* a still from a popular title of that genre, dimmed right down */
+#onboard .chip .cart{position:absolute;inset:0;opacity:0;transition:opacity .7s var(--ease);
+  background-image:linear-gradient(180deg,rgba(10,8,15,.3),rgba(10,8,15,.88)),var(--art);
+  background-size:cover;background-position:center;filter:saturate(.85)}
+#onboard .chip.hasart .cart{opacity:1}
+#onboard .chip:before{content:attr(data-i);position:absolute;top:7px;left:8px;z-index:2;
+  font:600 8.5px var(--b);letter-spacing:.14em;opacity:.42}
+#onboard .chip:after{content:"";position:absolute;left:0;bottom:0;width:100%;height:2px;z-index:3;background:var(--like);
+  transform:scaleX(0);transform-origin:left;transition:transform .38s var(--ease)}
+#onboard .chip .cnm{position:relative;z-index:2;display:-webkit-box;-webkit-box-orient:vertical;
+  -webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+#onboard .chip:active{transform:scale(.955)}
+#onboard .chip.on{background:var(--ink);color:#1a1326;border-color:var(--ink)}
+#onboard .chip.on .cart{opacity:0}
+#onboard .chip.on:before{opacity:.45}
+#onboard .chip.on:after{transform:scaleX(1)}
+#onboard .chip.pop{animation:chipPop .36s var(--snap)}
+.obcount{margin:16px 0 0;font:600 11.5px var(--b);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.obcount.bump{animation:bump .4s var(--snap)}
+.obcount b{color:var(--like)}
+
+/* dials */
+#onboard .sl{margin:15px 0}
+#onboard .sl>div{display:flex;justify-content:space-between;color:var(--dim);font-size:13px;margin-bottom:9px}
+#onboard .sl>div b{color:var(--ink);font-weight:600}
+#onboard input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:99px;
+  background:linear-gradient(90deg,var(--nope),var(--like));padding:0;border:0;margin:0;width:100%}
+#onboard input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;
+  background:var(--ink);box-shadow:0 4px 16px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.3);cursor:grab}
+#onboard input[type=range]::-moz-range-thumb{width:24px;height:24px;border:0;border-radius:50%;background:var(--ink)}
+.obprof{display:grid;gap:10px;margin:24px 0 0;padding:17px 18px;border:1px solid var(--line);
+  border-radius:16px;background:rgba(255,255,255,.03)}
+.obprof div,.obdna div{display:grid;grid-template-columns:56px 1fr;gap:11px;align-items:center;
+  font:600 10.5px var(--b);letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+.obprof u,.obdna u{display:block;height:6px;border-radius:99px;background:rgba(239,230,210,.1);
+  text-decoration:none;overflow:hidden}
+.obprof u i,.obdna u i{display:block;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--like),#f2d894);transition:width .28s var(--ease)}
+
+/* result */
+.obarch{padding:22px;border:1px solid var(--line);border-radius:18px;margin-bottom:6px;
+  background:linear-gradient(155deg,rgba(217,164,65,.14),rgba(255,255,255,.02) 62%)}
+.obarch .eyeb{margin-bottom:7px}
+.obarch>b{display:block;font:800 clamp(30px,7.4vw,42px)/1 var(--d);letter-spacing:-.038em;color:var(--like)}
+.obdna{display:grid;gap:9px;margin-top:18px}
+.eq{display:flex;gap:5px;height:48px;align-items:center;margin:22px 0 0}
+.eq i{width:5px;height:100%;border-radius:4px;background:linear-gradient(var(--like),var(--nope));
+  animation:eq 1s ease-in-out infinite alternate}
+@keyframes eq{from{transform:scaleY(.12)}to{transform:scaleY(1)}}
+
+/* sign-in step */
+.obcard{padding:20px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.035)}
+.obtabs{display:flex;gap:5px;padding:4px;border-radius:99px;border:1px solid var(--line);
+  background:rgba(255,255,255,.05);margin-bottom:14px}
+.obtabs button{flex:1;height:40px;border-radius:99px;background:none;border:0;color:var(--dim);
+  font:600 13.5px var(--b);font-family:inherit;cursor:pointer;transition:background .25s,color .25s}
+.obtabs button.on{background:var(--ink);color:#1a1326}
+.obcard .accg{width:100%}
+.obfield{display:grid;gap:9px;margin-top:11px}
+.obfield input{width:100%;height:50px;padding:0 16px;border-radius:12px;border:1px solid var(--line);
+  background:#14120e;color:var(--ink);font:inherit;font-size:15px}
+.obfield input:focus{outline:none;border-color:var(--like)}
+.obtrust{margin-top:14px;color:var(--dim);font-size:12.5px;line-height:1.55}
+@media(max-height:720px){
+  .obhead{margin-bottom:9px}.obbar{margin-bottom:18px}
+  .reveal{font-size:clamp(27px,7.4vw,40px);margin-bottom:10px}
+  .pl{font-size:15.5px;margin-bottom:12px}
+  .hero0{margin-bottom:16px}.deck0{height:clamp(150px,26vh,200px)}
+  .obarch{padding:17px}.obcard{padding:16px}
+  .obfield input{height:46px}.obfield{gap:8px}
+  #onboard .sl{margin:11px 0}.obprof{padding:14px;margin-top:16px}
+  .eq{height:38px;margin-top:16px}.obnav{margin-top:16px;padding-top:16px}
+}
+
+/* ---------- mood: what the engine read ---------- */
+.mzu-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0 14px}
+.mzu-row:empty{display:none}
+.mzu-k{font:600 9.5px var(--b);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-right:2px}
+.mzu{padding:5px 11px;border-radius:99px;border:1px solid var(--line);background:var(--glass);
+  font:600 11.5px var(--b);color:var(--ink)}
+.mz-src{color:var(--dim);font-weight:500}
+.mz-wait{padding:36px 0;text-align:center;color:var(--dim);font-size:14px;letter-spacing:.01em}
+
+/* ---------- onboarding motion ---------- */
+#onboard.open .ob{animation:obIn .55s var(--ease)}
+@keyframes obIn{from{opacity:0;transform:scale(.985) translateY(10px)}}
+/* the top card periodically shows what a swipe looks like */
+@keyframes demo{
+  0%,52%{transform:rotate(-2.5deg) translate3d(0,0,0)}
+  64%,72%{transform:rotate(5.5deg) translate3d(74px,-8px,0)}
+  88%,100%{transform:rotate(-2.5deg) translate3d(0,0,0)}}
+@keyframes chipPop{40%{transform:scale(.93)}100%{transform:scale(1)}}
+@keyframes bump{35%{transform:translateY(-3px) scale(1.06)}100%{transform:none}}
+/* a sheen sweeps the progress bar as it fills */
+.obbar b{position:relative;overflow:hidden}
+.obbar b:after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);
+  animation:sheen 3.6s ease-in-out infinite}
+@keyframes sheen{0%{transform:translateX(-100%)}58%,100%{transform:translateX(240%)}}
+/* the headline rises out of its own baseline */
+.obarch>b{animation:archIn .75s var(--ease) backwards .1s}
+@keyframes archIn{from{opacity:0;clip-path:inset(0 0 106% 0);transform:translateY(.42em)}
+  to{opacity:1;clip-path:inset(-8px -8px -12px -8px);transform:none}}
+/* the primary CTA carries a slow sheen */
+.btn.big{position:relative;overflow:hidden}
+.btn.big:after{content:"";position:absolute;top:-2px;bottom:-2px;width:34%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
+  transform:translateX(-170%) skewX(-18deg);animation:ctasheen 4s ease-in-out infinite}
+@keyframes ctasheen{0%{transform:translateX(-170%) skewX(-18deg)}46%,100%{transform:translateX(380%) skewX(-18deg)}}
+/* why-sign-up points, staggered in */
+.obben{display:grid;gap:9px;margin-top:15px}
+.obben div{display:grid;grid-template-columns:18px 1fr;gap:10px;align-items:start;
+  font-size:13.5px;line-height:1.45;color:rgba(239,230,210,.72);
+  animation:rise .55s var(--ease) backwards}
+.obben div:nth-child(2){animation-delay:.08s}
+.obben div:nth-child(3){animation-delay:.16s}
+.obben svg{width:15px;height:15px;margin-top:2px;color:var(--sp);flex:none}
+/* the orbs take on the colour of the step you're on */
+#onboard[data-s="1"] .orb.a{background:#8fb996}
+#onboard[data-s="2"] .orb.a{background:#5b86ff}
+#onboard[data-s="3"] .orb.a{background:#d9a441}
+#onboard[data-s="4"] .orb.a{background:#ff5c8a}
+#onboard[data-s="5"] .orb.a{background:#8fb996}
+@media(prefers-reduced-motion:reduce){
+  #onboard .orb,#onboard .c0,.obbar b:after,.btn.big,.btn.big:after,.eq i,.obben div,.obc>*,#onboard.open .ob,.obarch>b{animation:none!important}
+}
 /* ---------- tour ---------- */
 #tour{position:fixed;inset:0;z-index:40;display:none;touch-action:none}
 #tour.on{display:block}
@@ -812,12 +985,7 @@ nav button.on span{max-width:84px;opacity:1}
 .rev p{margin:0;font-size:13.5px;line-height:1.5;color:var(--dim)}
 .bks.lks .wl{margin-top:8px}
 
-.obsteps{list-style:none;margin:2px 0 16px;padding:0;display:grid;gap:12px}
-.obsteps li{display:grid;grid-template-columns:28px 1fr;gap:11px;align-items:start;font-size:14px;line-height:1.45;color:var(--ink)}
-.obsteps li>span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:#1a1326;font-weight:700;font-size:13px}
-.obsteps b{font-weight:600}
-.oblink{color:var(--like);font-weight:600;text-decoration:none;white-space:nowrap}
-.oblink:hover{text-decoration:underline}/* ---------- account & sync ---------- */
+/* ---------- account & sync ---------- */
 .accrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .accrow input{flex:1;min-width:170px}
 .accid{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
@@ -829,8 +997,7 @@ nav button.on span{max-width:84px;opacity:1}
 .accg{background:var(--ink);color:#1a1326;border-color:var(--ink);font-weight:600}
 .accnote{font-size:12.5px;color:var(--dim);margin-top:10px;line-height:1.55}
 .accnote .lnk{color:var(--like)}
-</style>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Instrument+Serif&display=swap">
+</style><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Instrument+Serif&display=swap">
 
 
 </head>
@@ -884,6 +1051,7 @@ nav button.on span{max-width:84px;opacity:1}
       <div class="mz-res" id="mzRes"></div>
       <div class="mz-quote" id="mzQuote"></div>
       <div class="mz-fp" id="mzFp"></div>
+      <div class="mzu-row" id="mzUnder"></div>
       <div class="mz-meta"><span id="mzCount"></span><button id="mzAgain">&#8635; Another take</button></div>
       <div class="mz-grid" id="mzGrid"></div>
       <div class="mz-end" id="mzEnd"></div>
@@ -900,25 +1068,16 @@ nav button.on span{max-width:84px;opacity:1}
   <section class="view" id="v-taste"><div class="wrap">
     <div class="eyebrow">Your profile</div>
     <h1>Your taste</h1>
-    <div class="panel" id="accPanel"><h3>Sync across devices</h3><div id="accBody"></div></div>
     <div class="panel"><div class="read" id="readout"></div><div class="stats" id="stats"></div></div>
     <div class="panel"><h3>Genres you lean toward</h3><div id="gBars"></div></div>
     <div class="panel"><h3>Taste profile</h3><div id="fBars"></div></div>
     <div class="panel"><h3>Recently liked</h3><div class="list" id="likedList"></div></div>
+    <div class="panel" id="accPanel"><h3>Sync across devices</h3><div id="accBody"></div></div>
     <div class="panel"><h3>Your streaming</h3><p class="sub" style="margin-bottom:12px" id="ottStat"></p><div class="rowb"><button class="btn ghost" id="ottBtn">Edit my services</button></div></div>
-    <div class="panel"><h3>Connect TMDB</h3><p class="sub" style="margin-bottom:0" id="spStat"></p>
-      <ol class="sps" id="spSteps">
-        <li><b>Make a free TMDB account</b><p>Sign up at <code>themoviedb.org</code>, then open <b style="color:var(--ink);display:inline">Settings &rarr; API</b>. It&rsquo;s free for non-commercial use.</p><div class="rowb"><a class="btn ghost" href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">Open TMDB settings</a></div></li>
-        <li><b>Copy the key</b><p>Under <b style="color:var(--ink);display:inline">API Key (v3 auth)</b> copy the long string. A v4 read access token also works.</p></li>
-        <li><b>Paste it here</b><input id="tmKey" placeholder="TMDB API key or read token" autocomplete="off" autocapitalize="off" spellcheck="false"><div class="rowb"><button class="btn" id="tmSave">Save</button><button class="btn ghost" id="tmOff">Disconnect</button></div></li>
-        <li><b>What it unlocks</b><p>Posters, cast, trailers and the full film &amp; TV catalogue. Without it, cine runs on an offline editorial set of curated titles.</p></li>
-      </ol>
-      <div class="note" style="text-align:left;margin-top:12px">This product uses the TMDB API but is not endorsed or certified by TMDB. Your key and your taste stay on this device.</div>
-    </div>
     <div class="rowb"><button class="btn ghost" id="obBtn">Show onboarding</button><button class="btn ghost" id="tourBtn">Replay tutorial</button><button class="btn ghost" id="exp">Export my taste</button><button class="btn danger" id="rst">Reset everything</button></div>
   </div></section>
 </main>
-<div id="onboard"><i class="orb a"></i><i class="orb b"></i><i class="orb c"></i><div class="ob"><div class="dots" id="dots"></div><div class="step" id="obStep"></div></div></div>
+<div id="onboard"><i class="orb a"></i><i class="orb b"></i><i class="orb c"></i><div class="ob"><div class="obhead"><span class="obbrand">cine<i>.</i></span><span class="obstepno" id="obNo"></span></div><div class="obbar"><b id="obFill"></b></div><div class="step" id="obStep"></div></div></div>
 <div id="sheet"><div class="sb"></div><div class="sp" role="dialog" aria-modal="true" aria-label="Details" tabindex="-1"><div class="grabw"><i class="grab"></i></div><div class="sc"></div></div></div>
 <div id="tour" role="dialog" aria-label="Quick tour"><div id="tourHole"></div><div id="tourFinger"></div><div id="tourCap"></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -926,7 +1085,7 @@ nav button.on span{max-width:84px;opacity:1}
 /* ============================================================================
    cine — data: catalogue, genre profiles, keyword inference, mood lexicon
    ========================================================================== */
-const CFG = { brand:'cine', tagline:'swipe to find your next watch', key:'cine.v3', tmdbKey:'cine.tmdb', tmdbProxy:'cine.tmdb.proxy' };
+const CFG = { brand:'cine', tagline:'swipe to find your next watch', key:'cine.v3', tmdbProxy:'cine.tmdb.proxy' };
 
 const TYPE_LABEL = { movie:'Film', tv:'Series' };
 const LANG_NAME = { en:'English', hi:'Hindi', bn:'Bengali', ta:'Tamil', ml:'Malayalam', te:'Telugu',
@@ -1138,6 +1297,21 @@ const MZ_TYPE = { series:'tv', shows:'tv', tv:'tv', binge:'tv', film:'movie', fi
 const MZ_KIND = { anime:'anime' };
 const MZ_GENRE_WORDS = {
   romantic:['Romance'], romance:['Romance'], 'love story':['Romance'], 'rom-com':['Romance','Comedy'], romcom:['Romance','Comedy'], 'rom com':['Romance','Comedy'],
+  comedy:['Comedy'], comedies:['Comedy'], action:['Action'], drama:['Drama'], family:['Family'], adventure:['Adventure'],
+  historical:['History'], 'period drama':['History','Drama'], war:['War'], western:['Western'], gangster:['Crime'], mafia:['Crime'],
+  spy:['Thriller'], superhero:['Action','Adventure'], 'super hero':['Action','Adventure'], space:['Sci-Fi'], alien:['Sci-Fi'], aliens:['Sci-Fi'],
+  robot:['Sci-Fi'], robots:['Sci-Fi'], 'time travel':['Sci-Fi'], dystopia:['Sci-Fi'], dystopian:['Sci-Fi'],
+  zombie:['Horror'], zombies:['Horror'], vampire:['Horror'], vampires:['Horror'], ghost:['Horror'], supernatural:['Horror'],
+  slasher:['Horror'], monster:['Horror'], martial:['Action'], robbery:['Crime'], kidnapping:['Thriller'], murder:['Crime','Thriller'],
+  police:['Crime'], assassin:['Action','Thriller'], hitman:['Action','Thriller'], espionage:['Thriller'], political:['Drama'], politics:['Drama'],
+  teen:['Drama','Comedy'], teenagers:['Drama','Comedy'], wedding:['Romance','Comedy'], dating:['Romance','Comedy'], relationship:['Romance','Drama'],
+  anime:['Animation'], cartoon:['Animation'], cartoons:['Animation'], magic:['Fantasy'], dragon:['Fantasy'], dragons:['Fantasy'],
+  medieval:['Adventure','Fantasy'], samurai:['Action','Adventure'], ninja:['Action'], pirate:['Adventure'], pirates:['Adventure'],
+  cowboy:['Western'], cowboys:['Western'], survival:['Adventure','Thriller'], disaster:['Thriller','Adventure'],
+  apocalypse:['Sci-Fi','Thriller'], apocalyptic:['Sci-Fi','Thriller'], pandemic:['Thriller','Drama'], virus:['Thriller','Sci-Fi'],
+  'true crime':['Documentary','Crime'], nature:['Documentary'], wildlife:['Documentary'], boxing:['Drama'], racing:['Action','Drama'],
+  epic:['Adventure','History'], indie:['Drama'], courtroom:['Drama','Crime'], prison:['Crime','Drama'], noir:['Crime','Mystery'],
+  biopic:['Documentary'], sport:['Documentary'], sports:['Documentary'],
   funny:['Comedy'], hilarious:['Comedy'], laugh:['Comedy'],
   scary:['Horror'], horror:['Horror'], creepy:['Horror'],
   thriller:['Thriller'], gripping:['Thriller'],
@@ -1442,18 +1616,112 @@ function mzFind(tok) {
   if (tok.length >= 5) { for (const k in MZ_SINGLE) if (Math.abs(k.length - tok.length) <= 1 && lev(k, tok) <= 1) return { key: k, e: MZ_SINGLE[k] }; }
   return null;
 }
+/* ============================================================================
+   MOOD ENGINE
+   Layer one, here: a lexicon that reads a free-text prompt into a structured
+   plan — genres, themes, era, language, format, runtime, tone, and a vibe
+   vector. Layer two (further down, next to the network code) turns that plan
+   into real catalogue queries, so an answer is drawn from the whole of TMDB
+   rather than from whatever happens to be cached on the device.
+   ========================================================================== */
+
+/* TMDB keeps separate genre ids for film and TV */
+const GEN_MV = { Action:28, Adventure:12, Animation:16, Comedy:35, Crime:80, Documentary:99, Drama:18, Family:10751, Fantasy:14, History:36, Horror:27, Music:10402, Mystery:9648, Romance:10749, 'Sci-Fi':878, Thriller:53, War:10752, Western:37 };
+const GEN_TV = { Action:10759, Adventure:10759, Animation:16, Comedy:35, Crime:80, Documentary:99, Drama:18, Family:10751, Fantasy:10765, 'Sci-Fi':10765, Mystery:9648, War:10768, Western:37 };
+
+/* Themes the lexicon knows. Each one resolves to a TMDB keyword, which is what
+   lets a phrase like "time loop" or "single location" actually narrow the
+   catalogue instead of just tinting the vibe. */
+const MZ_KEYWORDS = {
+  'time loop':['time loop'], 'time travel':['time travel'],  'time traveller':['time travel'],
+  'heist':['heist'], 'con artist':['con artist'], 'con man':['con artist'], 'grifter':['con artist'],
+  'dystopia':['dystopia'], 'dystopian':['dystopia'], 'post apocalyptic':['post-apocalyptic'], 'apocalypse':['post-apocalyptic'], 'apocalyptic':['post-apocalyptic'],
+  'space':['space'], 'outer space':['space'], 'alien':['alien'], 'aliens':['alien'], 'robot':['robot'], 'robots':['robot'],
+  'artificial intelligence':['artificial intelligence'], 'cyberpunk':['cyberpunk'],
+  'vampire':['vampire'], 'vampires':['vampire'], 'zombie':['zombie'], 'zombies':['zombie'],
+  'ghost':['ghost'], 'ghosts':['ghost'], 'haunted house':['haunted house'],
+  'serial killer':['serial killer'], 'courtroom':['courtroom'], 'trial':['courtroom'], 'prison':['prison'], 'jail':['prison'],
+  'revenge':['revenge'], 'mafia':['mafia'], 'gangster':['gangster'], 'mob':['mafia'],
+  'spy':['spy'], 'espionage':['spy'], 'assassin':['assassin'], 'hitman':['hitman'],
+  'martial arts':['martial arts'], 'boxing':['boxing'], 'road trip':['road trip'], 'road movie':['road trip'],
+  'coming of age':['coming of age'], 'high school':['high school'], 'boarding school':['boarding school'], 'college':['college'],
+  'wedding':['wedding'], 'divorce':['divorce'], 'breakup':['break-up'], 'break up':['break-up'], 'love triangle':['love triangle'],
+  'found family':['found family'], 'survival':['survival'], 'wilderness':['wilderness'], 'stranded':['survival'],
+  'island':['island'], 'desert':['desert'], 'small town':['small town'], 'dystopian future':['dystopia'],
+  'dream':['dream'], 'dreams':['dream'], 'amnesia':['amnesia'], 'memory loss':['amnesia'],
+  'cult':['cult'], 'magic':['magic'], 'witch':['witch'], 'witches':['witch'], 'dragon':['dragon'], 'dragons':['dragon'],
+  'superhero':['superhero'], 'superheroes':['superhero'], 'comic book':['based on comic'],
+  'video game':['video game'], 'virtual reality':['virtual reality'], 'simulation':['simulation'],
+  'pandemic':['pandemic'], 'virus':['virus'], 'disaster':['disaster'], 'earthquake':['earthquake'],
+  'world war 2':['world war ii'], 'world war ii':['world war ii'], 'holocaust':['holocaust'],
+  'slavery':['slavery'], 'racism':['racism'], 'immigration':['immigrant'], 'addiction':['drug addiction'],
+  'mental illness':['mental illness'], 'depression':['depression'], 'grief':['grief'], 'grieving':['grief'],
+  'terminal illness':['terminal illness'], 'cancer':['cancer'], 'betrayal':['betrayal'],
+  'corruption':['corruption'], 'politics':['politics'], 'election':['election'], 'journalism':['journalist'],
+  'detective':['detective'], 'police':['police'], 'kidnapping':['kidnapping'], 'hostage':['hostage'],
+  'interrogation':['interrogation'], 'lawyer':['lawyer'], 'doctor':['doctor'], 'teacher':['teacher'],
+  'cooking':['cooking'], 'restaurant':['restaurant'], 'hotel':['hotel'], 'chef':['cooking'],
+  'train':['train'], 'submarine':['submarine'], 'pirate':['piracy'], 'pirates':['piracy'],
+  'cowboy':['cowboy'], 'samurai':['samurai'], 'ninja':['ninja'], 'viking':['viking'], 'vikings':['viking'],
+  'medieval':['middle ages'], 'based on a true story':['based on true story'], 'biopic':['biography'],
+  'musical':['musical'], 'dance':['dance'], 'dancing':['dance'], 'stand up':['stand-up comedy'],
+  'single location':['single location'], 'one location':['single location'], 'bottle episode':['single location'],
+  'nonlinear':['nonlinear timeline'], 'non linear':['nonlinear timeline'], 'twist ending':['twist ending'],
+  'female director':['female director'], 'female protagonist':['female lead'], 'strong female':['female lead'],
+  'lgbt':['lgbt'], 'lgbtq':['lgbt'], 'gay':['gay'], 'lesbian':['lesbian'],
+  'whodunit':['whodunit'], 'who dunnit':['whodunit'], 'murder mystery':['murder mystery'],
+  'cold case':['cold case'], 'true crime':['true crime'], 'court':['courtroom'],
+  'heist gone wrong':['heist'], 'undercover':['undercover'], 'double life':['double life'],
+  'small budget':['low budget'], 'indie':['independent film'], 'silent':['silent film'],
+  'anthology':['anthology'], 'mockumentary':['mockumentary'], 'found footage':['found footage'],
+  'space station':['space station'], 'space travel':['space travel'], 'first contact':['first contact'],
+  'kaiju':['kaiju'], 'mecha':['mecha'], 'isekai':['isekai'], 'slice of life':['slice of life'],
+  'harem':['harem'], 'magical girl':['magical girl'], 'mech':['mecha'], 'sports':['sport']
+};
+
+/* reads a decade, a year, or a vague era out of the text */
+function mzEra(nt) {
+  let m = nt.match(/\b(19|20)(\d)0s\b/);
+  if (m) { const y = +(m[1] + m[2]) * 10; return { from: y, to: y + 9, label: y + 's' }; }
+  m = nt.match(/\b(\d)0s\b/);
+  if (m) { const d = +m[1]; const y = d >= 3 ? 1900 + d * 10 : 2000 + d * 10; return { from: y, to: y + 9, label: y + 's' }; }
+  m = nt.match(/\b(19|20)\d{2}\b/);
+  if (m) { const y = +m[0]; return { from: y, to: y, label: String(y) }; }
+  if (/\b(recent|new|latest|newest|brand new|just (came|out))\b/.test(nt)) return { from: new Date().getFullYear() - 4, to: null, label: 'recent' };
+  if (/\b(classic|oldies|golden age|vintage|retro)\b/.test(nt)) return { to: 1989, from: null, label: 'classic' };
+  if (/\b(modern|contemporary)\b/.test(nt)) return { from: 2000, to: null, label: 'modern' };
+  return null;
+}
+
 function mzRead(text, base) {
-  const toks = mzTokens(text), hits = [];
+  const nt = norm(text), toks = mzTokens(text), hits = [];
   let neg = 0, mult = 1, mleft = 0, clause = 1, vague = 0, unk = 0, ind = 0;
-  const langs = new Set(), genres = new Set(), avoid = new Set(), req = new Set(); let maxRuntime = null, type = null, kind = null;
+  const langs = new Set(), genres = new Set(), avoid = new Set(), req = new Set(), kws = [];
+  let maxRuntime = null, type = null, kind = null;
+
   for (let i = 0; i < toks.length;) {
-    const t = toks[i]; let found = null, n = 0;
+    const t = toks[i];
+    let found = null, n = 0, got = false;
     for (let k = Math.min(4, toks.length - i); k >= 1; k--) {
       const kk = toks.slice(i, i + k).join(' ');
-      if (MOOD_MAP[kk]) { found = MOOD_MAP[kk]; n = k; if (MZ_GENRE_WORDS[kk]) MZ_GENRE_WORDS[kk].forEach(g => req.add(g)); break; }
+      const mm = MOOD_MAP[kk], gw = MZ_GENRE_WORDS[kk], kw = MZ_KEYWORDS[kk];
+      if (!mm && !gw && !kw) continue;
+      const isNeg = neg > 0;
+      if (mm) found = mm;
+      if (gw) { gw.forEach(g => (isNeg ? avoid : req).add(g)); if (!isNeg) gw.forEach(g => genres.add(g)); }
+      if (kw) kw.forEach(w => { if (kws.length < 4 && kws.indexOf(w) < 0) kws.push(w); });
+      if (!mm) ind += .9;
+      n = k; got = true; break;
     }
-    if (!found && n === 0) { const fz = mzFind(t); if (fz) { found = fz.e; n = 1; } }
-    if (found) { const isNeg = neg > 0; hits.push({ e: found, w: found[2] * clause * (mult > 1 ? mult : 1), neg: isNeg, m: mult }); found[1].forEach(g => (isNeg ? avoid : genres).add(g)); ind += found[2]; neg = 0; mult = 1; mleft = 0; i += n; continue; }
+    if (got) {
+      if (found) {
+        const isNeg = neg > 0;
+        hits.push({ e: found, w: found[2] * clause * (mult > 1 ? mult : 1), neg: isNeg, m: mult });
+        found[1].forEach(g => (isNeg ? avoid : genres).add(g));
+        ind += found[2];
+      }
+      neg = 0; mult = 1; mleft = 0; i += n; continue;
+    }
     if (MZ_BUT.has(t)) clause = 1.5;
     else if (MZ_NEG.has(t)) neg = 3;
     else if (MZ_INTENS.has(t)) { mult = 1.5; mleft = 2; }
@@ -1464,14 +1732,18 @@ function mzRead(text, base) {
     if (mleft > 0 && !MZ_INTENS.has(t) && !MZ_DIMIN.has(t)) { mleft--; if (!mleft) mult = 1; }
     i++;
   }
-  // language / runtime / type side-channels
-  const nt = norm(text);
+
+  /* side channels: language, runtime, format, era, quality */
   for (const k in MZ_LANG) if (new RegExp('\\b' + k + '\\b').test(nt)) { MZ_LANG[k].forEach(l => langs.add(l)); ind += .6; }
-  const m = norm(text).match(MZ_RUNTIME);
-  if (m) { const v = parseInt(m[1] || m[2], 10); if (v >= 40 && v <= 400) { maxRuntime = v; ind += .6; } }
-  for (const k in MZ_TYPE) if (new RegExp('\\b' + k + '\\b').test(norm(text))) { type = MZ_TYPE[k]; ind += .5; break; }
-  for (const k in MZ_KIND) if (new RegExp('\\b' + k + '\\b').test(norm(text))) { kind = MZ_KIND[k]; ind += .7; break; }
-  // accumulate
+  const m = nt.match(MZ_RUNTIME);
+  if (m) { const v = parseInt(m[1] || m[2], 10); if (v >= 15 && v <= 400) { maxRuntime = v; ind += .6; } }
+  for (const k in MZ_TYPE) if (new RegExp('\\b' + k + '\\b').test(nt)) { type = MZ_TYPE[k]; ind += .5; break; }
+  for (const k in MZ_KIND) if (new RegExp('\\b' + k + '\\b').test(nt)) { kind = MZ_KIND[k]; ind += .7; break; }
+  const era = mzEra(nt); if (era) ind += .5;
+  const qual = /\b(best|greatest|top|acclaimed|masterpiece|must.?watch|highest.?rated|brilliant|superb|outstanding)\b/.test(nt);
+  if (qual) ind += .5;
+
+  /* the vibe vector */
   const b = base || [.5, .5, .5, .5];
   let sw = 0, acc = [0, 0, 0, 0];
   hits.forEach(h => {
@@ -1486,7 +1758,13 @@ function mzRead(text, base) {
   const confidence = clamp((ind * .5 + (hits.length ? .3 : 0) - vague * .1) / 3);
   avoid.forEach(g => genres.delete(g));
   req.forEach(g => avoid.delete(g));
-  return { vec, genres: [...genres], req: [...req], avoid: [...avoid], langs: [...langs], maxRuntime, type, kind, hits: hits.length, ind: clamp(ind / 4), confidence, vague, unk, empty: hits.length === 0 };
+
+  const langLabel = langs.size ? [...langs].map(l => LANG_NAME[l] || l).join(' / ') : null;
+  const sort = qual ? 'rating' : (era && era.from && era.from >= new Date().getFullYear() - 6 ? 'recent' : 'popularity');
+  const constrained = req.size > 0 || kws.length > 0 || langs.size > 0 || !!era || !!type || !!kind || !!maxRuntime || qual;
+  return { vec, genres: [...genres], req: [...req], avoid: [...avoid], langs: [...langs], maxRuntime, type, kind,
+    kws, era, qual, sort, langLabel, constrained, hits: hits.length, ind: clamp(ind / 4), confidence, vague, unk,
+    empty: hits.length === 0 && kws.length === 0 };
 }
 function moodLabel(v) {
   const [p, w, d, s] = v;
@@ -1543,6 +1821,46 @@ function buildMood(plan, n) {
   return scored.slice(0, lim);
 }
 
+/* ---- shared by the local pool and the catalogue ---- */
+function mzPasses(t, plan) {
+  if (S.watched.includes(t.id)) return false;
+  if (plan.langs && plan.langs.length && t.lang && !plan.langs.includes(t.lang)) return false;
+  if (plan.type && t.type !== plan.type) return false;
+  if (plan.kind && kindOf(t) !== plan.kind) return false;
+  if (plan.maxRuntime && t.runtime && t.runtime > plan.maxRuntime) return false;
+  if (plan.avoid && plan.avoid.length && (t.genres || []).some(g => plan.avoid.includes(g))) return false;
+  return true;
+}
+function mzScoreAll(list, plan) {
+  const want = (plan.req && plan.req.length) ? plan.req : null;
+  const seen = new Set(), out = [];
+  list.forEach(t => {
+    if (!t || seen.has(t.id) || !mzPasses(t, plan)) return;
+    seen.add(t.id);
+    out.push({ t, s: moodScore(t, plan.vec, want) * (avoided(t, plan) ? .6 : 1) });
+  });
+  return out.sort((a, b) => b.s - a.s);
+}
+/* the plan as TMDB discover parameters; `drop` is the relaxation list */
+function mzQueryFor(plan, kind, drop) {
+  drop = drop || [];
+  const gmap = kind === 'tv' ? GEN_TV : GEN_MV;
+  const p = { include_adult: false, page: 1 };
+  const gids = (drop.indexOf('genres') >= 0 ? [] : (plan.req || [])).map(g => gmap[g]).filter(Boolean);
+  if (gids.length) p.with_genres = gids.join('|');
+  if (drop.indexOf('kws') < 0 && plan._kwids && plan._kwids.length) p.with_keywords = plan._kwids.join(',');
+  if (drop.indexOf('era') < 0 && plan.era) {
+    if (kind === 'tv') { if (plan.era.from) p['first_air_date.gte'] = plan.era.from + '-01-01'; if (plan.era.to) p['first_air_date.lte'] = plan.era.to + '-12-31'; }
+    else { if (plan.era.from) p['primary_release_date.gte'] = plan.era.from + '-01-01'; if (plan.era.to) p['primary_release_date.lte'] = plan.era.to + '-12-31'; }
+  }
+  if (plan.langs && plan.langs.length) p.with_original_language = plan.langs[0];
+  if (plan.maxRuntime && kind === 'movie') p['with_runtime.lte'] = plan.maxRuntime;
+  if (plan.qual) { p['vote_average.gte'] = 7.4; p['vote_count.gte'] = 400; } else p['vote_count.gte'] = 80;
+  if (plan.sort === 'rating') { p.sort_by = 'vote_average.desc'; p['vote_count.gte'] = Math.max(p['vote_count.gte'], 400); }
+  else if (plan.sort === 'recent') { p.sort_by = kind === 'tv' ? 'first_air_date.desc' : 'primary_release_date.desc'; p['vote_count.gte'] = Math.max(p['vote_count.gte'], 60); }
+  else p.sort_by = 'popularity.desc';
+  return p;
+}
 
 /* ---------------- TMDB adapter (v3) ---------------- */
 const TM = { img: 'https://image.tmdb.org/t/p/', api: 'https://api.themoviedb.org/3' };
@@ -1578,22 +1896,15 @@ function mergeDetail(f, m) {
   f.rating = rate(m) || f.rating; f.full = true; f.f = null;
   return f;
 }
-function tmdb(key, fetchFn, proxy) {
-  const bearer = !proxy && key.length > 60;
+function tmdb(fetchFn, proxy) {
+  /* every call goes through the hosted function, which adds the key server-side.
+     the key itself never reaches the browser. */
   const get = async (path, params) => {
-    let u;
-    if (proxy) {
-      /* the key is added server-side; the browser never sees it */
-      u = new URL(proxy);
-      u.searchParams.set('p', path);
-      for (const k in (params||{})) u.searchParams.set(k, params[k]);
-    } else {
-      u = new URL(TM.api + path);
-      for (const k in (params||{})) u.searchParams.set(k, params[k]);
-      if (!bearer) u.searchParams.set('api_key', key);
-    }
+    const u = new URL(proxy);
+    u.searchParams.set('p', path);
+    for (const k in (params||{})) u.searchParams.set(k, params[k]);
     let r;
-    try { r = await fetchFn(u.toString(), bearer ? { headers:{ Authorization:'Bearer '+key } } : undefined); }
+    try { r = await fetchFn(u.toString()); }
     catch (e) { throw { code:'offline' }; }
     if (r.status === 401) throw { code:'badkey' };
     if (r.status === 429) throw { code:'rate' };
@@ -1616,6 +1927,11 @@ function tmdb(key, fetchFn, proxy) {
       const r = await get('/search/multi', { query:q, include_adult:false, page:1 });
       return (r.results||[]).filter(m => m.media_type !== 'person' && m.poster_path).map(m => m.media_type === 'tv' ? fromTv(m) : fromMovie(m));
     },
+    discover: async (kind, params) => {
+      const r = await get('/discover/' + kind, Object.assign({ include_adult: false, page: 1 }, params));
+      return ((r.results) || []).filter(m => m.poster_path && (kind === 'tv' ? (m.name || m.original_name) : m.title)).map(m => kind === 'tv' ? fromTv(m) : fromMovie(m));
+    },
+    raw: async (path, params) => get(path, params),
     providers: async f => {
       const reg = S.region || 'IN';
       const r = await get((f.type==='tv'?'/tv/':'/movie/') + String(f.id).replace('tmdb:','').replace(/^[mt]/,'') + '/watch/providers');
@@ -1680,8 +1996,7 @@ function motif(h) {
 function wrapTitle(s, max, cap) {
   const words = String(s || '').split(/\s+/), out = []; let cur = '';
   words.forEach(w => { if (!cur) cur = w; else if ((cur + ' ' + w).length <= max) cur += ' ' + w; else { out.push(cur); cur = w; } });
-  if (cur) out.push(cur);
-  return out.slice(0, cap || 3);
+  if (cur) out.push(cur);  return out.slice(0, cap || 3);
 }
 const genCache = new Map();
 function genPoster(t, plain) {
@@ -1775,14 +2090,12 @@ function refreshArt(id) {
 }
 
 /* ---------------- state (S + save come from the engine) ---------------- */
-const TMKEY = LS.get(CFG.tmdbKey) || '';
 const TMPROXY = tmProxy();
-let TMC = TMKEY ? tmdb(TMKEY, (u, o) => fetch(u, o))
-  : (TMPROXY ? tmdb('', (u, o) => fetch(u, o), TMPROXY) : null);
+let TMC = TMPROXY ? tmdb((u, o) => fetch(u, o), TMPROXY) : null;
 let st = TMC ? 'loading' : 'demo', pg = 1 + Math.floor(Math.random() * 10), busy = false;
 let DECK = [], curView = 'discover', mzPlan = null, mzRunning = false;
-const STATUS = { demo:'Demo set', loading:'Connecting\u2026', live:'TMDB live', badkey:'Key rejected', rate:'Rate-limited', offline:'Offline', down:'TMDB down', dry:'Nothing new' };
-const ERR = { badkey:'TMDB rejected that key. Check it in Taste \u2192 Connect TMDB.', rate:'TMDB is rate-limiting. Try again shortly.', offline:'You appear to be offline.', down:'TMDB is temporarily unavailable.' };
+const STATUS = { demo:'Demo set', loading:'Connecting\u2026', live:'Live', badkey:'Rejected', rate:'Rate-limited', offline:'Offline', down:'Unavailable', dry:'Nothing new' };
+const ERR = { badkey:'The catalogue service rejected that request.', rate:'TMDB is rate-limiting. Try again shortly.', offline:'You appear to be offline.', down:'TMDB is temporarily unavailable.' };
 
 CAT.forEach(reg);
 Object.values(S.cat).forEach(reg);
@@ -1944,7 +2257,7 @@ function ottPickerHTML() {
   return '<div class="ottg" id="ottg">' + ottGridHTML() + '</div>'
     + '<label class="ottopt"><input type="checkbox" id="ottOnly"' + (S.ottOnly ? ' checked' : '') + '><span>Only recommend what I can stream on these</span></label>'
     + '<label class="ottopt reg"><span>Region</span><select id="ottReg">' + REGIONS.map(([c, n]) => '<option value="' + c + '"' + (c === S.region ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></label>'
-    + (TMC ? '' : '<div class="note" style="text-align:left">Demo mode can\u2019t check real availability. Connect TMDB in the Taste tab and this switches on.</div>');
+    + (TMC ? '' : '<div class="note" style="text-align:left">Availability needs a connection \u2014 it will fill in once you are online.</div>');
 }
 async function loadOttList() {
   if (!TMC) return; const r = S.region;
@@ -2324,14 +2637,99 @@ async function runMood() {
   mzSetState('built'); mzRunning = false;
   $('#v-moods').scrollTop = 0;
 }
-function renderMood() {
+/* ============================================================================
+   MOOD ENGINE — layer two. Lives beside the network client on purpose: this is
+   the half that talks to the catalogue.
+   ========================================================================== */
+const KWID = new Map();
+async function mzKeywordIds(names) {
+  const out = [];
+  for (const nm of (names || []).slice(0, 3)) {
+    if (KWID.has(nm)) { if (KWID.get(nm)) out.push(KWID.get(nm)); continue; }
+    let id = null;
+    try {
+      const r = await TMC.raw('/search/keyword', { query: nm });
+      const list = (r && r.results) || [];
+      const hit = list.filter(x => (x.name || '').toLowerCase() === nm)[0] || list[0];
+      id = hit ? hit.id : null;
+    } catch (e) { id = null; }
+    KWID.set(nm, id);
+    if (id) out.push(id);
+  }
+  return out;
+}
+async function mzCatalog(plan, drop) {
+  const jobs = [];
+  if (!plan.type || plan.type === 'movie') jobs.push(TMC.discover('movie', mzQueryFor(plan, 'movie', drop)));
+  if (!plan.type || plan.type === 'tv') jobs.push(TMC.discover('tv', mzQueryFor(plan, 'tv', drop)));
+  if (plan.kind === 'anime') jobs.push(TMC.discover('tv', Object.assign(mzQueryFor(plan, 'tv', drop), { with_genres: 16, with_original_language: 'ja' })));
+  const rs = await Promise.all(jobs.map(j => Promise.resolve(j).catch(() => null)));
+  const out = [], seen = new Set();
+  rs.forEach(list => (list || []).forEach(t => { if (t && t.poster && !seen.has(t.id)) { seen.add(t.id); out.push(t); } }));
+  return out;
+}
+/* local pool first (instant, works offline), then the catalogue. If the strict
+   read comes back thin, loosen it a step at a time rather than showing nothing. */
+async function moodFind(plan, n) {
+  const lim = n || 12;
+  const local = [...POOL.values()];
+  let scored = mzScoreAll(local, plan), from = 'local';
+  if (TMC && TMC.discover && plan.constrained) {
+    if (plan.kws && plan.kws.length) plan._kwids = await mzKeywordIds(plan.kws);
+    const relax = [];
+    if (plan.kws && plan.kws.length) relax.push(['kws']);
+    if (plan.era) relax.push(relax.length ? ['kws', 'era'] : ['era']);
+    for (let round = 0; round <= relax.length; round++) {
+      const drop = round === 0 ? [] : relax[round - 1];
+      const cat = await mzCatalog(plan, drop);
+      if (cat.length) { scored = mzScoreAll(local.concat(cat), plan); from = 'catalogue'; }
+      const enough = scored.filter(x => !(plan.req && plan.req.length) || (x.t.genres || []).some(g => plan.req.includes(g))).length;
+      if (enough >= Math.min(8, lim) || !cat.length) break;
+    }
+  }
+  if (plan.req && plan.req.length) {
+    const has = x => (x.t.genres || []).some(g => plan.req.includes(g));
+    const on = scored.filter(has);
+    if (on.length >= 3) return { list: on.slice(0, lim), from };
+    return { list: on.concat(scored.filter(x => !has(x))).slice(0, lim), from };
+  }
+  return { list: scored.slice(0, lim), from };
+}
+/* shows the reader what the engine took from the prompt */
+function mzUnderstood(p) {
+  const out = [];
+  (p.req || []).forEach(g => out.push(g));
+  (p.kws || []).forEach(k => out.push(k));
+  if (p.kind === 'anime') out.push('Anime');
+  if (p.type) out.push(p.type === 'tv' ? 'Series' : 'Films');
+  if (p.era) out.push(p.era.label);
+  if (p.langLabel) out.push(p.langLabel);
+  if (p.maxRuntime) out.push('under ' + p.maxRuntime + ' min');
+  if (p.qual) out.push('well rated');
+  (p.avoid || []).forEach(g => out.push('no ' + g));
+  return out.length ? '<span class="mzu-k">Read as</span>' + out.map(x => '<span class="mzu">' + esc(x) + '</span>').join('') : '';
+}
+
+let mzResults = [], mzToken = 0;
+async function renderMood() {
   const p = mzPlan || mzRead('', [S.feat.pace, S.feat.warmth, S.feat.depth, S.feat.scale]);
-  const res = buildMood(p, 12);
   $('#mzRes').textContent = 'Someone after ' + moodLabel(p.vec) + '.';
   $('#mzQuote').textContent = moodQuote(p.vec, p.genres);
   $('#mzFp').innerHTML = DIMS.map(([k, label], i) => '<div>' + label + '<u><i style="width:' + Math.round(p.vec[i] * 100) + '%"></i></u></div>').join('');
-  $('#mzCount').innerHTML = '<b>' + res.length + '</b> titles found';
-  $('#mzEnd').textContent = res.length ? 'That\u2019s the whole list. Save the ones you like.' : 'Nothing matched. Drop a filter, like the runtime or language, and try again.';
+  const uEl = $('#mzUnder'); if (uEl) uEl.innerHTML = mzUnderstood(p);
+  $('#mzCount').innerHTML = '<b>\u2026</b> searching';
+  $('#mzEnd').textContent = '';
+  $('#mzGrid').innerHTML = '<div class="mz-wait">Reading the catalogue\u2026</div>';
+  const token = ++mzToken;
+  let out;
+  try { out = await moodFind(p, 12); } catch (e) { out = { list: [], from: 'local' }; }
+  if (token !== mzToken) return;              /* a newer search has taken over */
+  const res = out.list;
+  mzResults = res.map(x => x.t);
+  $('#mzCount').innerHTML = '<b>' + res.length + '</b> titles found'
+    + (out.from === 'catalogue' ? ' <span class="mz-src">from the full catalogue</span>' : '');
+  $('#mzEnd').textContent = res.length ? 'That\u2019s the whole list. Save the ones you like.'
+    : 'Nothing matched that. Try loosening it \u2014 drop the era, or name a genre.';
   $('#mzGrid').innerHTML = res.map((x, i) => '<div class="mt" data-id="' + esc(x.t.id) + '" style="--sh:' + hueOf(x.t.title) + ';--i:' + i + '">'
     + pic(x.t, 'fill', true)
     + '<div class="mt-s"><b>' + matchPct(x.s) + '</b><sup>%</sup><small>fit</small></div>'
@@ -2339,11 +2737,34 @@ function renderMood() {
     + '<button class="mt-p' + (S.saves.includes(x.t.id) ? ' on' : '') + '" data-mtsave="' + esc(x.t.id) + '" aria-label="Save">' + ICON.save + '</button></div>').join('');
   $$('#mzGrid .mt').forEach(el => {
     el.onclick = e => { if (e.target.closest('button')) return; openDetails(el.dataset.id); };
-    const b = el.querySelector('[data-mtsave]'); if (b) b.onclick = e => { e.stopPropagation(); const t = findTrack(b.dataset.mtsave); if (!S.saves.includes(t.id)) { S.saves.push(t.id); commitSwipe(t, 'save'); b.classList.add('on'); toast('Saved \u00b7 ' + t.title); } else { S.saves = S.saves.filter(x => x !== t.id); save(); b.classList.remove('on'); } };
+    const b = el.querySelector('[data-mtsave]'); if (b) b.onclick = e => { e.stopPropagation(); const t = findTrack(b.dataset.mtsave); if (!t) return; if (!S.saves.includes(t.id)) { S.saves.push(t.id); commitSwipe(t, 'save'); b.classList.add('on'); toast('Saved \u00b7 ' + t.title); } else { S.saves = S.saves.filter(x => x !== t.id); save(); b.classList.remove('on'); } };
   });
   $('#v-moods').setAttribute('data-done', res.length ? '1' : '0');
   mzColors(p.vec);
   queueArt(res.map(x => x.t).slice(0, 12));
+}
+function savePlaylist() {
+  if (!mzResults.length) return;
+  let n = 0;
+  mzResults.forEach(t => { if (!S.saves.includes(t.id)) { S.saves.push(t.id); commitSwipe(t, 'save'); n++; } });
+  toast(n ? 'Added ' + n + ' to your watchlist' : 'Already all saved');
+}
+
+/* ---- genre tiles: a popular title's still, dimmed behind each label ---- */
+async function obGenreArt() {
+  if (!TMC || !TMC.discover) return;
+  for (const g of OB_GENRES) {
+    const id = GEN_MV[g]; if (!id) continue;
+    try {
+      const list = await TMC.discover('movie', { with_genres: id, sort_by: 'popularity.desc', 'vote_count.gte': 900, include_adult: false, page: 1 });
+      const hit = (list || []).filter(t => t.backdrop || t.poster)[0];
+      if (!hit) continue;
+      const url = img(hit.backdrop, 'w300') || img(hit.poster, 'w300');
+      if (!url) continue;
+      const el = document.querySelector('#obG .chip[data-g="' + g.replace(/"/g, '\\"') + '"]');
+      if (el) { el.style.setProperty('--art', 'url("' + url + '")'); el.classList.add('hasart'); }
+    } catch (e) { /* the tile simply keeps its flat look */ }
+  }
 }
 function mzColors(vec) {
   const h = Math.round(14 + vec[1] * 32 - vec[0] * 8);   /* rust (bleak, fast) to amber (warm, slow) */
@@ -2380,12 +2801,6 @@ function mzWaveInit() {
   document.addEventListener('visibilitychange', kickWave);
 }
 function mzAgain() { mzPlan = null; $('#v-moods').setAttribute('data-done', '0'); mzSetState('idle'); mzTa.value = ''; $('#mzBox').classList.remove('has'); mzGo.disabled = true; mzQuestion(); mzChips(); }
-function savePlaylist() {
-  if (!mzPlan) return; const res = buildMood(mzPlan, 12); let n = 0;
-  res.forEach(x => { if (!S.saves.includes(x.t.id)) { S.saves.push(x.t.id); commitSwipe(x.t, 'save'); n++; } });
-  toast(n ? 'Added ' + n + ' to your watchlist' : 'Already all saved');
-  renderMood();
-}
 
 /* ============================================================================
    MYSTERY
@@ -2467,11 +2882,6 @@ function rTaste() {
   const liked = lid.map(findTrack).filter(Boolean).slice(0, 12);
   $('#likedList').innerHTML = liked.length ? liked.map(t => '<div class="item" data-det="' + esc(t.id) + '">' + pic(t, 'thumb') + '<div class="m"><b>' + esc(t.title) + '</b><span>' + esc(metaLine(t)) + '</span></div></div>').join('') : '<span class="sub">Nothing yet. Swipe right on a few titles and they land here.</span>';
   $$('#likedList .item').forEach(it => it.onclick = () => openDetails(it.dataset.det));
-  $('#spStat').textContent = TMC
-    ? (TMPROXY && !TMKEY ? 'Live \u2014 using the hosted key, nothing for you to set up. ' + POOL.size + ' titles in the pool.'
-                        : 'Connected \u2014 ' + STATUS[st] + '. ' + POOL.size + ' titles in the pool.')
-    : ('Not connected \u2014 running on the offline set of ' + CAT.length + ' titles.');
-  const spSteps = $('#spSteps'); if (spSteps) spSteps.hidden = !!(TMC && TMPROXY && !TMKEY);
   paintTaste();
 }
 
@@ -2563,72 +2973,144 @@ function openDaily() {
 let obStep = 0, obPicks = new Set(), obGenres = new Set(), obFeat = null;
 function openOb() { obStep = 0; ottSig0 = ottSig(); $('#onboard').classList.add('open'); rOb(); }
 function closeOb() { $('#onboard').classList.remove('open'); }
+let obAuthMode = 'signup';
+function obBars(el, f, stagger) {
+  if (!el) return;
+  if (!el.children.length) {
+    /* render at zero, then fill on the next frame so the bars animate in */
+    el.innerHTML = DIMS.map(([k, label], i) => '<div>' + label + '<u><i style="width:0%' + (stagger ? ';transition-delay:' + (i * 90) + 'ms' : '') + '"></i></u></div>').join('');
+    requestAnimationFrame(() => requestAnimationFrame(() => obBars(el, f, stagger)));
+    return;
+  }
+  DIMS.forEach(([k], i) => { const c = el.children[i]; const b = c && c.querySelector('i'); if (b) b.style.width = Math.round(f[k] * 100) + '%'; });
+}
+function obGenreCount() {
+  const el = $('#obGC'); if (!el) return;
+  const n = obGenres.size;
+  el.innerHTML = n ? '<b>' + n + '</b> selected' + (n < 3 ? ' \u2014 pick a few more' : n >= 5 ? ' \u2014 great start' : '') : 'Pick a few to seed your taste';
+  el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+}
 function rOb(dir) {
   const host = $('#obStep'); const steps = 6;
-  $('#dots').innerHTML = Array.from({ length: steps }, (_, i) => '<i class="' + (i <= obStep ? 'on' : '') + '"></i>').join('');
+  $('#obNo').textContent = 'Step ' + (obStep + 1) + ' of ' + steps;
+  $('#obFill').style.transform = 'scaleX(' + ((obStep + 1) / steps).toFixed(4) + ')';
   host.className = 'step ' + (dir === -1 ? 'bck' : 'fwd');
+  let c = '';
   if (obStep === 0) {
     const picks = OB_SEEDS.map(findTrack).filter(Boolean).slice(0, 3);
-    host.innerHTML = '<div class="hero0"><div class="deck0">' + picks.map((t, i) => '<div class="c0" data-p="' + i + '"><div class="c0f" style="--h:' + hueOf(t.title) + '">' + pic(t, 'fill', true) + '<div class="c0i"><h3>' + esc(t.title) + '</h3><p>' + esc(t.year || '') + '</p></div></div></div>').join('') + '</div></div>'
-      + '<div class="reveal" style="font-size:clamp(30px,7vw,44px)">Swipe to find<br>your next watch.</div>'
-      + '<p class="pl">cine learns what you love from a few swipes \u2014 then it hands you a daily pick, mood watchlists, and a saved list you can filter by genre or language.</p>'
-      + obNav('Get started', 1);
+    c = '<div class="hero0"><div class="deck0">' + picks.map((t, i) => '<div class="c0" data-p="' + i + '"><div class="c0f" style="--h:' + hueOf(t.title) + '">' + pic(t, 'fill', true) + '<div class="c0i"><h3>' + esc(t.title) + '</h3><p>' + esc(t.year || '') + '</p></div></div></div>').join('') + '</div></div>'
+      + '<div class="reveal">Swipe to find<br>your next watch.</div>'
+      + '<p class="pl">A few swipes and cine learns what you love \u2014 then it hands you a daily pick, mood watchlists and a watchlist you can filter.</p>'
+      + '<div class="swhint"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></i>right to like, left to pass</div>'
+      + obNav('Get started');
+
   } else if (obStep === 1) {
-    host.innerHTML = '<div class="reveal">What do you watch?</div><p class="pl">Pick a few. This seeds your taste \u2014 you can change it all later.</p>'
-      + '<div class="chips" id="obG">' + OB_GENRES.map(g => '<button class="chip' + (obGenres.has(g) ? ' on' : '') + '" data-g="' + esc(g) + '">' + esc(g) + '</button>').join('') + '</div>'
-      + obNav('Next', 2);
-    $$('#obG [data-g]').forEach(b => b.onclick = () => { const g = b.dataset.g; if (obGenres.has(g)) obGenres.delete(g); else obGenres.add(g); b.classList.toggle('on'); });
+    c = '<div class="eyeb">Your taste</div><div class="reveal">What do you watch?</div>'
+      + '<p class="pl">Pick a few. This seeds your profile \u2014 you can change it all later.</p>'
+      + '<div class="chips" id="obG">' + OB_GENRES.map((g, i) => '<button class="chip' + (obGenres.has(g) ? ' on' : '') + '" data-g="' + esc(g) + '" data-i="' + (i < 9 ? '0' : '') + (i + 1) + '"><i class="cart"></i><span class="cnm">' + esc(g) + '</span></button>').join('') + '</div>'
+      + '<p class="obcount" id="obGC"></p>'
+      + obNav('Next');
+
   } else if (obStep === 2) {
-    host.innerHTML = '<div class="reveal">What do you stream on?</div><p class="pl">Tap the services you have. cine only recommends what you can actually watch, and puts the logo on each card.</p>'
-      + ottPickerHTML() + obNav('Next', 3);
-    bindOttPicker(host);
-  } else if (obStep === 3 && tmProxy()) {
-    host.innerHTML = '<div class="reveal">You\u2019re all set.</div>'
-      + '<p class="pl">Real posters, cast, reviews and streaming info are already switched on for you. Nothing to connect, nothing to paste.</p>'
-      + obNav('Almost there', 3);
+    c = '<div class="eyeb">Availability</div><div class="reveal">What do you stream on?</div>'
+      + '<p class="pl">Tap the services you have. cine only recommends what you can actually watch, and puts the logo on every card.</p>'
+      + ottPickerHTML() + obNav('Next');
+
   } else if (obStep === 3) {
-    host.innerHTML = '<div class="reveal">Go live with TMDB.</div>'
-      + '<p class="pl">cine runs on a demo set out of the box. A free TMDB key unlocks real posters, cast, reviews and streaming info \u2014 it takes about a minute, costs nothing, and has no daily limit.</p>'
-      + '<ol class="obsteps">'
-      + '<li><span>1</span><div>Open the TMDB API page. <a class="oblink" href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">Open themoviedb.org \u2197</a></div></li>'
-      + '<li><span>2</span><div>Sign up free, then click <b>Create</b> \u2192 <b>Developer</b> and accept the terms. <a class="oblink" href="https://www.themoviedb.org/signup" target="_blank" rel="noopener">Create an account \u2197</a></div></li>'
-      + '<li><span>3</span><div>Copy your <b>API Key</b> (or the longer API Read Access Token).</div></li>'
-      + '<li><span>4</span><div>Paste it below and connect.</div></li>'
-      + '</ol>'
-      + '<input class="rk" id="obTmKey" placeholder="TMDB API key or read token" autocomplete="off" autocapitalize="off" spellcheck="false">'
-      + '<div class="obnav col"><button class="btn big" id="obTmSave">Connect TMDB</button><div class="obx"><button class="lnk" id="obBack">Back</button><button class="lnk" id="obTmSkip">Not now</button></div></div>';
-    const inp = $('#obTmKey'); if (inp) inp.onkeydown = e => { if (e.key === 'Enter') obTmConnect(); };
-    $('#obTmSave').onclick = obTmConnect;
-    $('#obTmSkip').onclick = () => { obStep = 4; rOb(1); };
-  } else if (obStep === 4) {
     obFeat = obFeat || seedFeat(); const cur = obFeat;
-    host.innerHTML = '<div class="reveal">Tune the dials.</div><p class="pl">Roughly where do you sit? Drag to nudge your starting profile.</p>'
-      + '<div class="sl"><div><span>Slow</span><span>Fast-paced</span></div><input type="range" min="0" max="100" value="' + Math.round(cur.pace * 100) + '" data-k="pace"></div>'
-      + '<div class="sl"><div><span>Bleak</span><span>Feel-good</span></div><input type="range" min="0" max="100" value="' + Math.round(cur.warmth * 100) + '" data-k="warmth"></div>'
-      + '<div class="sl"><div><span>Easy</span><span>Demanding</span></div><input type="range" min="0" max="100" value="' + Math.round(cur.depth * 100) + '" data-k="depth"></div>'
-      + '<div class="sl"><div><span>Intimate</span><span>Epic</span></div><input type="range" min="0" max="100" value="' + Math.round(cur.scale * 100) + '" data-k="scale"></div>'
-      + obNav('Almost there', 3);
-    $$('#obStep input[type=range]').forEach(r => r.oninput = () => { cur[r.dataset.k] = r.value / 100; });
-  } else {
-    const f = obFeat || seedFeat(); const a = (function () { const hi = f.pace > .58, up = f.warmth > .55; return hi ? (up ? 'Crowd-Pleaser' : 'Thrill Seeker') : (up ? 'Comfort Watcher' : 'Slow-Burn Romantic'); })();
-    host.innerHTML = '<div class="reveal">You\u2019re a <span style="color:var(--like)">' + a + '</span>.</div>'
-      + '<p class="pl">That\u2019s your starting read. Every swipe sharpens it \u2014 the meter in the corner shows how confident cine is.</p>'
+    c = '<div class="eyeb">Calibration</div><div class="reveal">Tune the dials.</div>'
+      + '<p class="pl">Roughly where do you sit? Drag to shape the profile cine starts from.</p>'
+      + '<div class="sl"><div><span>Slow</span><b>Fast-paced</b></div><input type="range" min="0" max="100" value="' + Math.round(cur.pace * 100) + '" data-k="pace"></div>'
+      + '<div class="sl"><div><span>Bleak</span><b>Feel-good</b></div><input type="range" min="0" max="100" value="' + Math.round(cur.warmth * 100) + '" data-k="warmth"></div>'
+      + '<div class="sl"><div><span>Easy</span><b>Demanding</b></div><input type="range" min="0" max="100" value="' + Math.round(cur.depth * 100) + '" data-k="depth"></div>'
+      + '<div class="sl"><div><span>Intimate</span><b>Epic</b></div><input type="range" min="0" max="100" value="' + Math.round(cur.scale * 100) + '" data-k="scale"></div>'
+      + '<div class="obprof" id="obProf"></div>'
+      + obNav('Almost there');
+
+  } else if (obStep === 4) {
+    const f = obFeat || seedFeat();
+    const a = (function () { const hi = f.pace > .58, up = f.warmth > .55; return hi ? (up ? 'Crowd-Pleaser' : 'Thrill Seeker') : (up ? 'Comfort Watcher' : 'Slow-Burn Romantic'); })();
+    c = '<div class="obarch"><div class="eyeb">Your starting profile</div><b>' + a + '</b><div class="obdna" id="obDna"></div></div>'
+      + '<p class="pl">That\u2019s your opening read. Every swipe sharpens it \u2014 the meter in the corner shows how confident cine is.</p>'
       + '<div class="eq">' + Array.from({ length: 22 }, (_, i) => '<i style="animation-delay:' + (i * .06) + 's"></i>').join('') + '</div>'
-      + '<div class="obnav col"><button class="btn big" id="obStart">Start swiping</button><div class="obx"><button class="lnk" id="obBack">Back</button><button class="lnk" id="obSkip">Skip</button></div></div>';
-    $('#obStart').onclick = finishOb; $('#obSkip').onclick = finishOb; $('#obBack').onclick = () => { obStep = 4; rOb(-1); };
+      + obNav('Continue');
+
+  } else {
+    const up = obAuthMode === 'signup';
+    c = '<div class="eyeb">One last thing</div><div class="reveal">Keep your taste.</div>'
+      + '<p class="pl">An account carries your watchlist, ratings and history to every device. It\u2019s free \u2014 and cine works fine without one.</p>'
+      + '<div class="obcard">'
+      + '<div class="obtabs"><button data-m="signup" class="' + (up ? 'on' : '') + '">Create account</button><button data-m="signin" class="' + (up ? '' : 'on') + '">Sign in</button></div>'
+      + '<button class="btn accg" id="obGoogle">Continue with Google</button>'
+      + '<div class="obfield">'
+      + '<input id="obEmail" type="email" placeholder="you@email.com" autocomplete="email" autocapitalize="off" spellcheck="false">'
+      + '<input id="obPass" type="password" placeholder="Password (8+ characters)" autocomplete="' + (up ? 'new-password' : 'current-password') + '">'
+      + '</div>'
+      + '<div class="accrow" style="margin-top:12px"><button class="btn" id="obAuthGo" style="flex:1">' + (up ? 'Create account' : 'Sign in') + '</button></div>'
+      + '<div class="accrow"><button class="lnk" id="obForgot">Forgot password?</button></div>'
+      + (sbErr ? '<div class="accnote" style="color:var(--nope)">' + esc(sbErr) + '</div>' : '')
+      + '<div class="obben">'
+      + '<div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Your watchlist, ratings and history on every device</span></div>'
+      + '<div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Never lose your taste if you switch or lose a phone</span></div>'
+      + '<div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free, no spam \u2014 and you can leave whenever you like</span></div>'
+      + '</div>'
+      + '<div class="obtrust">You can also skip this and add an account later from the Taste tab.</div>'
+      + '</div>'
+      + '<div class="obnav col"><button class="btn big" id="obStart">Start swiping</button><div class="obx"><button class="lnk" id="obBack">Back</button><button class="lnk" id="obSkip">Maybe later</button></div></div>';
   }
+
+  host.innerHTML = '<div class="obody"><div class="obc">' + c + '</div></div>';
+
+  /* ---- per-step wiring ---- */
+  if (obStep === 1) {
+    $$('#obG [data-g]').forEach(b => b.onclick = () => {
+      const g = b.dataset.g;
+      if (obGenres.has(g)) obGenres.delete(g); else obGenres.add(g);
+      b.classList.toggle('on');
+      b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+      obGenreCount();
+    });
+    obGenreCount();
+    obGenreArt();
+  } else if (obStep === 2) {
+    bindOttPicker(host);
+  } else if (obStep === 3) {
+    const cur = obFeat;
+    obBars($('#obProf'), cur);
+    $$('#obStep input[type=range]').forEach(r => r.oninput = () => { cur[r.dataset.k] = r.value / 100; obBars($('#obProf'), cur); });
+  } else if (obStep === 4) {
+    obBars($('#obDna'), obFeat || seedFeat(), true);
+  } else if (obStep === 5) {
+    $$('#obStep .obtabs button').forEach(b => b.onclick = () => { obAuthMode = b.dataset.m; sbErr = ''; rOb(0); });
+    $('#obGoogle').onclick = () => { S.onboarded = true; save(); sbSignInGoogle(); };
+    $('#obAuthGo').onclick = async () => {
+      const e = ($('#obEmail').value || '').trim(), p = $('#obPass').value || '';
+      if (e.indexOf('@') < 1) return toast('Enter a valid email first', true);
+      if (p.length < 8) return toast('Use a password with at least 8 characters', true);
+      const b = $('#obAuthGo'); b.disabled = true; b.textContent = 'Please wait\u2026';
+      /* mark onboarding done first: if a sync pulls a newer copy it reloads, and we should
+         land in the app rather than back at the start of this flow */
+      S.onboarded = true; save();
+      try { await sbPasswordAuth(obAuthMode, e, p); finishOb(); }
+      catch (err) { sbErr = (err && err.message) || 'Authentication failed'; rOb(0); }
+    };
+    $('#obForgot').onclick = async () => {
+      const e = ($('#obEmail').value || '').trim();
+      if (e.indexOf('@') < 1) return toast('Enter a valid email first', true);
+      try { await sbRecoverPassword(e); toast('Reset link sent \u2014 check your inbox'); }
+      catch (err) { sbErr = (err && err.message) || 'Could not send the reset email'; rOb(0); }
+    };
+    $('#obStart').onclick = finishOb;
+    $('#obSkip').onclick = finishOb;
+    $('#obBack').onclick = () => { obStep = 4; rOb(-1); };
+  }
+
   if (obStep < 5) {
     const n = $('#obNext'); if (n) n.onclick = () => { if (obStep === 1) obFeat = null; obStep++; rOb(1); };
     const b = $('#obBack'); if (b) b.onclick = () => { obStep--; rOb(-1); };
     const s = $('#obSkip'); if (s) s.onclick = finishOb;
   }
   $('#onboard').setAttribute('data-s', obStep);
-}
-function obTmConnect() {
-  const el = $('#obTmKey'); const v = el ? el.value.trim() : '';
-  if (!v) { toast('Paste your TMDB key first', true); return; }
-  if (!LS.set(CFG.tmdbKey, v)) { toast('This browser blocks storage, so the key can\u2019t be saved', true); return; }
-  finishOb(); location.reload();
 }
 function obNav(label) {
   return '<div class="obnav">' + (obStep > 0 ? '<button class="btn ghost" id="obBack">Back</button>' : '') + '<button class="btn" id="obNext">' + label + '</button><span class="sp"></span><button class="lnk" id="obSkip" style="text-decoration:none;color:var(--dim)">Skip</button></div>';
@@ -2656,7 +3138,7 @@ function finishOb() {
    ========================================================================== */
 const TOUR = [
   { sel: '#deck', cap: 'top', t: 'Swipe', d: 'Drag a card right to like, left to pass, or down to skip, up for the trailer — any direction works. Tap the card to flip it for emotions, pacing and the synopsis.' },
-  { sel: '#nav', cap: 'bot', t: 'Five rooms', d: 'Swipe to explore, For you ranks live, Moods reads a vibe, Mystery is a daily quiz, Taste maps you.' },
+  { sel: '#nav', cap: 'bot', t: 'Five rooms', d: 'Swipe to explore, For you ranks live, Moods reads a vibe, Saved holds your watchlist, Taste maps you.' },
   { sel: '#meter', cap: 'bot', t: 'Taste confidence', d: 'This fills as you swipe. The more it fills, the sharper your picks get.' },
   { sel: '#bShuf', cap: 'top', t: 'Shuffle', d: 'Want a different mix? Shuffle rebuilds the deck from your taste.' }
 ];
@@ -2757,8 +3239,6 @@ $('#ottBtn').onclick = openOtt;
 $('#tourBtn').onclick = startTour;
 $('#exp').onclick = exportTaste;
 $('#rst').onclick = () => { if (confirm('Erase all your swipes, saves, games and taste on this device? Your API keys stay.')) { [CFG.key, 'cine.q', 'cine.tour', 'cine.rt', 'cine.traktc'].forEach(LS.del); location.reload(); } };
-$('#tmSave').onclick = () => { const v = $('#tmKey').value.trim(); if (!v) return toast('Paste a key first', true); if (!LS.set(CFG.tmdbKey, v)) return toast('This browser blocks storage, so the key can\u2019t be saved', true); location.reload(); };
-$('#tmOff').onclick = () => { LS.del(CFG.tmdbKey); location.reload(); };
 $('#sheet .sb').onclick = closeSheet;
 $('#sheet .grabw').onpointerdown = e => { const sp = $('#sheet .sp'); sp.classList.add('drag'); const y0 = e.clientY; const move = ev => { const dy = Math.max(0, ev.clientY - y0); sp.style.transform = 'translateY(' + dy + 'px)'; }; const up = ev => { const dy = Math.max(0, ev.clientY - y0); document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); sp.classList.remove('drag'); sp.style.transform = ''; if (dy > 90) closeSheet(); }; document.addEventListener('pointermove', move); document.addEventListener('pointerup', up); };
 function exportTaste() {
@@ -2904,7 +3384,7 @@ ensureDeck();
         return '<span class="wp' + (S.otts.indexOf(p.id) >= 0 ? ' mine' : '') + '">' + (p.l ? '<img src="' + img(p.l, 'w92') + '" alt="">' : '') + esc(p.n) + (f ? '<u>' + (p.k === 'free' ? 'Free' : 'Free\u00b7ads') + '</u>' : '') + '</span>';
       }).join('') : '<span class="wp off">Not on sub / free here</span>';
     } else if (TMC && t.source === 'tmdb') c = '<span class="wp off">Checking\u2026</span>';
-    else if (!TMC) c = '<button class="wchip" data-a="tmk">Live data: add TMDB key</button>';
+    else if (!TMC) c = '<span class="wp off">Availability unavailable offline</span>';
     return '<div class="bks wtw"><span class="wk">Where to watch \u00b7 ' + esc(reg) + '</span><div class="wl">' + c + '<button class="wchip" data-u="' + esc(jw(t)) + '">JustWatch \u2197</button></div></div>';
   }
   function chip0(t) {
@@ -2961,7 +3441,7 @@ ensureDeck();
     var go = function (v) { var b = $('#nav button[data-v="' + v + '"]'); if (b) b.click(); };
     if (typeof closeSheet === 'function') closeSheet();
     flippedId = null; go('taste');
-    setTimeout(function () { var el = document.getElementById(c.dataset.a === 'rk' ? 'rkP' : 'tmKey'); if (el) el.scrollIntoView({ block: 'center' }); }, 250);
+    setTimeout(function () { var el = document.getElementById(c.dataset.a === 'rk' ? 'rkP' : 'accPanel'); if (el) el.scrollIntoView({ block: 'center' }); }, 250);
   }, true);
 
 
