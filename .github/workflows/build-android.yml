@@ -81,12 +81,16 @@ jobs:
           }
           EOF
 
-          # Bubblewrap validates the SDK path by checking for platform-tools,
-          # build-tools and at least one installed Android platform.
+          # Bubblewrap expects a "build" directory in its SDK root, but the
+          # hosted runner exposes this as "build-tools". Add a compatibility alias.
           test -x "$ANDROID_HOME/platform-tools/adb"
           test -d "$ANDROID_HOME/build-tools/35.0.0"
           test -d "$ANDROID_HOME/platforms/android-35"
-          bubblewrap doctor || true
+          if [ ! -e "$ANDROID_HOME/build" ]; then
+            ln -s "$ANDROID_HOME/build-tools" "$ANDROID_HOME/build"
+          fi
+          bubblewrap updateConfig --jdkPath="$JAVA_HOME" --androidSdkPath="$ANDROID_HOME"
+          bubblewrap doctor
 
           if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ]; then
             test -n "${ANDROID_KEYSTORE_PASSWORD:-}" || { echo "ANDROID_KEYSTORE_PASSWORD secret is required with ANDROID_KEYSTORE_BASE64"; exit 1; }
