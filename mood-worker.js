@@ -13,7 +13,7 @@ async function init() {
   if (initPromise) return initPromise;
   initPromise = (async () => {
     try {
-      pipe = await pipeline('feature-extraction', './models/all-MiniLM-L6-v2/', { dtype: 'q8' });
+      pipe = await pipeline('feature-extraction', 'all-MiniLM-L6-v2', { dtype: 'q8' });
       return true;
     } catch (localError) {
       try {
