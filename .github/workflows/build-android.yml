@@ -32,15 +32,31 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # Avoid android-actions/setup-android: its default "tools" package is obsolete.
+      - name: Locate Android SDK tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "$ANDROID_HOME"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager was not found under $ANDROID_HOME/cmdline-tools"
+            exit 1
+          fi
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          "$SDKMANAGER" --version
+
+      - name: Accept Android SDK licenses
+        shell: bash
+        run: yes | "$SDKMANAGER" --licenses >/dev/null || true
 
       - name: Install Android SDK packages
         shell: bash
         run: |
           set -euo pipefail
-          sdkmanager --licenses </dev/null || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Install Bubblewrap CLI
         run: npm install --global @bubblewrap/cli
